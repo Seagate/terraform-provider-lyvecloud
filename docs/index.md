@@ -48,7 +48,7 @@ provider "lyvecloud" {
   region = "..."
   access_key = "..."
   secret_key = "..."
-  endpoint_url = "...""
+  endpoint_url = "..."
 
   //acount api
   client_id = "..."

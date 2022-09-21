@@ -42,6 +42,9 @@ func AuthAccountAPI(clientId, clientSecret string) (*AuthData, error) {
 	if err != nil {
 		return client, err
 	}
+	if resp.StatusCode == ErrCodeUnauthorized {
+		return client, errors.New(UnauthorizedMessage)
+	}
 	resBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return client, err

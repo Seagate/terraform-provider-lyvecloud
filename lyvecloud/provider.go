@@ -115,7 +115,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		var err error
 		accApiClient, err = AuthAccountAPI(clientId, clientSecret)
 		if err != nil {
-			return nil, diag.FromErr(errors.New("error creating account api client"))
+			return nil, diag.FromErr(err)
 		}
 	}
 

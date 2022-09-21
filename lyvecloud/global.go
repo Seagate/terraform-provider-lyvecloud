@@ -33,4 +33,6 @@ const (
 
 	Account = "acc"
 	S3      = "s3"
+
+	UnauthorizedMessage = "unauthorized: incorrect client_id or client_secret values"
 )

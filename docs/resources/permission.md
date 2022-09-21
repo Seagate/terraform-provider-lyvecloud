@@ -5,9 +5,9 @@ description: |-
   Provides a permission resource.
 ---
 
-# Resource: lyvecloud_s3_permission
+# Resource: lyvecloud_permission
 
-Provides a S3 bucket resource.
+Provides a permission resource.
 
 ## Example Usage
 

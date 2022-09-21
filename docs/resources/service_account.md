@@ -5,7 +5,7 @@ description: |-
   Provides a service account resource.
 ---
 
-# Resource: lyvecloud_s3_permission
+# Resource: lyvecloud_service_account
 
 Provides a service account resource.
 

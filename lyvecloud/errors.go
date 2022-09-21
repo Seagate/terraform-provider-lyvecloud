@@ -8,4 +8,5 @@ const (
 	ErrCodeBucketNotEmpty                  = "BucketNotEmpty"
 	ErrCodeObjectLockConfigurationNotFound = "ObjectLockConfigurationNotFoundError"
 	ErrCodeOperationAborted                = "OperationAborted"
+	ErrCodeUnauthorized                    = 401
 )
