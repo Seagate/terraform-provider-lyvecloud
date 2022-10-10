@@ -36,8 +36,8 @@ To quickly get started using the provider, configure the provider as shown below
 terraform {
   required_providers {
     lyvecloud = {
-      version = "0.1.0"
-      source  = "registry.terraform.io/seagate/lyvecloud"
+      source = "Seagate/lyvecloud"
+      version = "0.1.1"
     }
   }
 }
