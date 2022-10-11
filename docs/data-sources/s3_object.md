@@ -1,6 +1,6 @@
 ---
-subcategory: "S3"
 page_title: "Lyve Cloud: lyvecloud_s3_object"
+subcategory: "S3"
 description: |-
     Provides metadata and optionally content of an S3 object
 ---

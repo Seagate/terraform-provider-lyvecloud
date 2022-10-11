@@ -1,6 +1,6 @@
 ---
-subcategory: "S3"
 page_title: "Lyve Cloud: lyvecloud_s3_bucket"
+subcategory: "S3"
 description: |-
     Provides details about a specific S3 bucket
 ---

@@ -10,19 +10,17 @@ This project is based on code samples from the official [AWS provider](https://g
 
 ## Example Provider Configuration
 
-To manage buckets and objects you need to set the S3 API credentials.
-To manage permissions and service accounts you need to set the Account API.
-You can set either the credentials of the S3 API, the credentials of the Account API, or both.
+You can set the credentials of the S3 API to manage buckets and objects, the credentials of the Account API to manage permissions and service accounts, or both.
 
 ```terraform
 provider "lyvecloud" {
-  //s3 api
+  //s3 api - optional
   region = ""
   access_key = ""
   secret_key = ""
   endpoint_url = ""
 
-  //acount api
+  //account api - optional
   client_id = ""
   client_secret = ""
 }

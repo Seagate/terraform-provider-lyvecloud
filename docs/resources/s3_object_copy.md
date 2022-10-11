@@ -1,6 +1,6 @@
 ---
-subcategory: "S3 (Simple Storage)"
 page_title: "Lyve Cloud: lyvecloud_s3_object_copy"
+subcategory: "S3"
 description: |-
   Provides a resource for copying an S3 object.
 ---

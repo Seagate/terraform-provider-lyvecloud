@@ -1,6 +1,6 @@
 ---
-subcategory: "S3"
 page_title: "Lyve Cloud: lyvecloud_s3_bucket_object_lock_configuration"
+subcategory: "S3"
 description: |-
   Provides an S3 bucket Object Lock configuration resource.
 ---

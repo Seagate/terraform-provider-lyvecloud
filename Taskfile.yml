@@ -23,9 +23,9 @@ tasks:
   install:
     desc: Build and install the plugin in the correct folder (resolved automatically based on current Operating System).
     vars: 
-      WINDOWS_OUTPUT_PATH: '{{.APPDATA}}\HashiCorp\Terraform\plugins\registry.terraform.io\seagate\lyvecloud\{{.PLUGIN_VERSION}}\{{OS}}_{{ARCH}}\{{.OUTPUT_FILENAME}}.exe'
-      DARWIN_OUTPUT_PATH: '{{.HOME}}/Library/Application Support/io.terraform/plugins/registry.terraform.io/seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
-      UNIX_OUTPUT_PATH: '{{.HOME}}/.local/share/terraform/plugins/registry.terraform.io/seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
+      WINDOWS_OUTPUT_PATH: '{{.APPDATA}}\HashiCorp\Terraform\plugins\registry.terraform.io\Seagate\lyvecloud\{{.PLUGIN_VERSION}}\{{OS}}_{{ARCH}}\{{.OUTPUT_FILENAME}}.exe'
+      DARWIN_OUTPUT_PATH: '{{.HOME}}/Library/Application Support/io.terraform/plugins/registry.terraform.io/Seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
+      UNIX_OUTPUT_PATH: '{{.HOME}}/.local/share/terraform/plugins/registry.terraform.io/Seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
     cmds:
       - |
         {{if eq OS "windows"}}
