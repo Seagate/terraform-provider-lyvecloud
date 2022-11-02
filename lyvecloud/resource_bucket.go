@@ -35,10 +35,19 @@ func ResourceBucket() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"bucket": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(0, 63),
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"bucket_prefix"},
+				ValidateFunc:  validation.StringLenBetween(0, 63),
+			},
+			"bucket_prefix": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"bucket"},
+				ValidateFunc:  validation.StringLenBetween(0, 63-resource.UniqueIDSuffixLength),
 			},
 			"tags": {
 				Type:     schema.TypeMap,
@@ -71,13 +80,20 @@ func resourceBucketCreate(d *schema.ResourceData, meta interface{}) error {
 
 	conn := *meta.(Client).S3Client
 	bucket := d.Get("bucket").(string)
+	if v, ok := d.GetOk("bucket"); ok {
+		bucket = v.(string)
+	} else if v, ok := d.GetOk("bucket_prefix"); ok {
+		bucket = resource.PrefixedUniqueId(v.(string))
+	} else {
+		bucket = resource.UniqueId()
+	}
 
 	req := &s3.CreateBucketInput{
 		Bucket:                     aws.String(bucket),
 		ObjectLockEnabledForBucket: aws.Bool(d.Get("object_lock_enabled").(bool)),
 	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err := resource.RetryContext(context.Background(), time.Minute, func() *resource.RetryError {
 		_, err := conn.CreateBucket(req)
 
 		if tfawserr.ErrCodeEquals(err, ErrCodeOperationAborted) {
@@ -137,7 +153,7 @@ func resourceBucketRead(d *schema.ResourceData, meta interface{}) error {
 		Bucket: aws.String(d.Id()),
 	}
 
-	err := resource.Retry(bucketCreatedTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(context.Background(), bucketCreatedTimeout, func() *resource.RetryError {
 		_, err := conn.HeadBucket(input)
 
 		if d.IsNewResource() && tfawserr.ErrStatusCodeEquals(err, http.StatusNotFound) {
@@ -175,6 +191,34 @@ func resourceBucketRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error reading S3 Bucket (%s): %w", d.Id(), err)
 	}
 
+	d.Set("bucket", d.Id())
+
+	// Object Lock configuration.
+	resp, err := RetryWhenAWSErrCodeEquals(2*time.Minute, func() (interface{}, error) {
+		return conn.GetObjectLockConfiguration(&s3.GetObjectLockConfigurationInput{
+			Bucket: aws.String(d.Id()),
+		})
+	}, s3.ErrCodeNoSuchBucket)
+
+	// The S3 API method calls above can occasionally return no error (i.e. NoSuchBucket)
+	// after a bucket has been deleted (eventual consistency woes :/), thus, when making extra S3 API calls
+	// such as GetObjectLockConfiguration, the error should be caught for non-new buckets as follows.
+	if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, s3.ErrCodeNoSuchBucket) {
+		log.Printf("[WARN] S3 Bucket (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	if err != nil {
+		log.Printf("[WARN] Unable to read S3 bucket (%s) Object Lock Configuration: %s", d.Id(), err)
+	}
+
+	if output, ok := resp.(*s3.GetObjectLockConfigurationOutput); ok && output.ObjectLockConfiguration != nil {
+		d.Set("object_lock_enabled", aws.StringValue(output.ObjectLockConfiguration.ObjectLockEnabled) == s3.ObjectLockEnabledEnabled)
+	} else {
+		d.Set("object_lock_enabled", false)
+	}
+
 	// Add the region as an attribute
 	discoveredRegion, err := RetryWhenAWSErrCodeEquals(d.Timeout(schema.TimeoutRead), func() (interface{}, error) {
 		return s3manager.GetBucketRegionWithClient(context.Background(), &conn, d.Id(), func(r *request.Request) {
@@ -210,7 +254,33 @@ func resourceBucketRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.Set("bucket", d.Id())
+	// Retry due to S3 eventual consistency
+	tagsRaw, err := RetryWhenAWSErrCodeEquals(2*time.Minute, func() (interface{}, error) {
+		return BucketListTags(&conn, d.Id())
+	}, s3.ErrCodeNoSuchBucket)
+
+	// The S3 API method calls above can occasionally return no error (i.e. NoSuchBucket)
+	// after a bucket has been deleted (eventual consistency woes :/), thus, when making extra S3 API calls
+	// such as GetBucketTagging, the error should be caught for non-new buckets as follows.
+	if !d.IsNewResource() && tfawserr.ErrCodeEquals(err, s3.ErrCodeNoSuchBucket) {
+		log.Printf("[WARN] S3 Bucket (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("error listing tags for S3 Bucket (%s): %s", d.Id(), err)
+	}
+
+	tags, ok := tagsRaw.(KeyValueTags)
+
+	if !ok {
+		return fmt.Errorf("error listing tags for S3 Bucket (%s): unable to convert tags", d.Id())
+	}
+
+	if err := d.Set("tags", tags.Map()); err != nil {
+		return fmt.Errorf("error setting tags: %w", err)
+	}
 
 	return nil
 }

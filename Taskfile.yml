@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  PLUGIN_VERSION: 0.1.0
+  PLUGIN_VERSION: 0.1.2
   OUTPUT_FILENAME: terraform-provider-lyvecloud
 
 tasks:
@@ -23,9 +23,9 @@ tasks:
   install:
     desc: Build and install the plugin in the correct folder (resolved automatically based on current Operating System).
     vars: 
-      WINDOWS_OUTPUT_PATH: '{{.APPDATA}}\HashiCorp\Terraform\plugins\registry.terraform.io\Seagate\lyvecloud\{{.PLUGIN_VERSION}}\{{OS}}_{{ARCH}}\{{.OUTPUT_FILENAME}}.exe'
-      DARWIN_OUTPUT_PATH: '{{.HOME}}/Library/Application Support/io.terraform/plugins/registry.terraform.io/Seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
-      UNIX_OUTPUT_PATH: '{{.HOME}}/.local/share/terraform/plugins/registry.terraform.io/Seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
+      WINDOWS_OUTPUT_PATH: '{{.APPDATA}}\HashiCorp\Terraform\plugins\registry.terraform.io\seagate\lyvecloud\{{.PLUGIN_VERSION}}\{{OS}}_{{ARCH}}\{{.OUTPUT_FILENAME}}.exe'
+      DARWIN_OUTPUT_PATH: '{{.HOME}}/Library/Application Support/io.terraform/plugins/registry.terraform.io/seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
+      UNIX_OUTPUT_PATH: '{{.HOME}}/.local/share/terraform/plugins/registry.terraform.io/seagate/lyvecloud/{{.PLUGIN_VERSION}}/{{OS}}_{{ARCH}}/{{.OUTPUT_FILENAME}}'
     cmds:
       - |
         {{if eq OS "windows"}}
@@ -41,4 +41,19 @@ tasks:
           {{end}}
         {{end}}
         echo "Done!"
+    silent: true
+
+  test:
+    desc: Run the package tests.
+    env: 
+      TF_ACC: 1
+      LYVECLOUD_REGION: region
+      LYVECLOUD_ACCESS_KEY: access_key
+      LYVECLOUD_SECRET_KEY: secret_key
+      LYVECLOUD_ENDPOINT: endpoint_url
+      LYVECLOUD_CLIENT_ID: client_id
+      LYVECLOUD_CLIENT_SECRET: client_secret
+
+    cmds:
+      - go test -v -cover ./lyvecloud
     silent: true

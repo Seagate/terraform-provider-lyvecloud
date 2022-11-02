@@ -9,4 +9,6 @@ const (
 	ErrCodeObjectLockConfigurationNotFound = "ObjectLockConfigurationNotFoundError"
 	ErrCodeOperationAborted                = "OperationAborted"
 	ErrCodeUnauthorized                    = 401
+	ErrCreatingPermission                  = "Error creating permission"
+	ErrCreatingServiceAccount              = "Error creating service account"
 )

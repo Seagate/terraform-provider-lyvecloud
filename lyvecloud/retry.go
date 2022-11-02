@@ -22,7 +22,7 @@ type Retryable func(error) (bool, error)
 func RetryWhenContext(ctx context.Context, timeout time.Duration, f func() (interface{}, error), retryable Retryable) (interface{}, error) {
 	var output interface{}
 
-	err := resource.Retry(timeout, func() *resource.RetryError { // nosemgrep: helper-schema-resource-Retry-without-TimeoutError-check
+	err := resource.RetryContext(ctx, timeout, func() *resource.RetryError { // nosemgrep: helper-schema-resource-Retry-without-TimeoutError-check
 		var err error
 		var retry bool
 
@@ -89,7 +89,7 @@ func RetryWhenAWSErrMessageContains(timeout time.Duration, f func() (interface{}
 	return RetryWhenAWSErrMessageContainsContext(context.Background(), timeout, f, code, message)
 }
 
-var resourceFoundError = errors.New(`found resource`)
+var errResourceFound = errors.New(`found resource`)
 
 // RetryUntilNotFoundContext retries the specified function until it returns a resource.NotFoundError.
 func RetryUntilNotFoundContext(ctx context.Context, timeout time.Duration, f func() (interface{}, error)) (interface{}, error) {
@@ -102,7 +102,7 @@ func RetryUntilNotFoundContext(ctx context.Context, timeout time.Duration, f fun
 			return false, err
 		}
 
-		return true, resourceFoundError
+		return true, errResourceFound
 	})
 }
 
@@ -225,8 +225,8 @@ func NotFound(err error) bool {
 
 // TimedOut returns true if the error represents a "wait timed out" condition.
 // Specifically, TimedOut returns true if the error matches all these conditions:
-//  * err is of type resource.TimeoutError
-//  * TimeoutError.LastError is nil
+//   - err is of type resource.TimeoutError
+//   - TimeoutError.LastError is nil
 func TimedOut(err error) bool {
 	// This explicitly does *not* match wrapped TimeoutErrors
 	timeoutErr, ok := err.(*resource.TimeoutError) //nolint:errorlint // Explicitly does *not* match wrapped TimeoutErrors

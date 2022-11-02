@@ -25,7 +25,7 @@ resource "lyvecloud_service_account" "serviceaccount" {
 The following arguments are supported:
 
 * `service_account` - Specifies the unique Service Account name. The name allows only alphanumeric, '-', '_' or space.
-* `description` - Description of the service account.
+* `description` - Description of the Service Account.
 * `permissions` - Specify (one or more) unique values of permission-id.
 
 ## Attributes Reference

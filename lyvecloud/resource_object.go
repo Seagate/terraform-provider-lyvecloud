@@ -2,6 +2,8 @@ package lyvecloud
 
 import (
 	"bytes"
+	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -38,6 +41,10 @@ func ResourceObject() *schema.Resource {
 			State: resourceObjectImport,
 		},
 
+		CustomizeDiff: customdiff.Sequence(
+			resourceObjectCustomizeDiff,
+		),
+
 		Schema: map[string]*schema.Schema{
 			"bucket": {
 				Type:         schema.TypeString,
@@ -49,7 +56,25 @@ func ResourceObject() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"content": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"source", "content_base64"},
+			},
+			"content_base64": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"source", "content"},
+			},
 			"content_disposition": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"content_encoding": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"content_language": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -60,6 +85,7 @@ func ResourceObject() *schema.Resource {
 			},
 			"etag": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"metadata": {
@@ -68,6 +94,16 @@ func ResourceObject() *schema.Resource {
 				Elem:         &schema.Schema{Type: schema.TypeString},
 				ValidateFunc: validateMetadataIsLowerCase,
 			},
+			"object_lock_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice(s3.ObjectLockMode_Values(), false),
+			},
+			"object_lock_retain_until_date": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.IsRFC3339Time,
+			},
 			"key": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -75,6 +111,11 @@ func ResourceObject() *schema.Resource {
 				ValidateFunc: validation.NoZeroValues,
 			},
 			"source": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"content", "content_base64"},
+			},
+			"source_hash": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -117,7 +158,7 @@ func resourceObjectRead(d *schema.ResourceData, meta interface{}) error {
 
 	var resp *s3.HeadObjectOutput
 
-	err := resource.Retry(objectCreationTimeout, func() *resource.RetryError {
+	err := resource.RetryContext(context.Background(), objectCreationTimeout, func() *resource.RetryError {
 		var err error
 
 		resp, err = conn.HeadObject(input)
@@ -150,9 +191,12 @@ func resourceObjectRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("cache_control", resp.CacheControl)
 	d.Set("content_disposition", resp.ContentDisposition)
 	d.Set("content_encoding", resp.ContentEncoding)
+	d.Set("content_language", resp.ContentLanguage)
 	d.Set("content_type", resp.ContentType)
 	d.Set("etag", strings.Trim(aws.StringValue(resp.ETag), `"`))
 	d.Set("version_id", resp.VersionId)
+	d.Set("object_lock_mode", resp.ObjectLockMode)
+	d.Set("object_lock_retain_until_date", flattenObjectDate(resp.ObjectLockRetainUntilDate))
 
 	metadata := PointersMapToStringList(resp.Metadata)
 
@@ -201,6 +245,32 @@ func resourceObjectUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	bucket := d.Get("bucket").(string)
 	key := d.Get("key").(string)
+
+	if d.HasChanges("object_lock_mode", "object_lock_retain_until_date") {
+		req := &s3.PutObjectRetentionInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+			Retention: &s3.ObjectLockRetention{
+				Mode:            aws.String(d.Get("object_lock_mode").(string)),
+				RetainUntilDate: expandObjectDate(d.Get("object_lock_retain_until_date").(string)),
+			},
+		}
+
+		// Bypass required to lower or clear retain-until date.
+		if d.HasChange("object_lock_retain_until_date") {
+			oraw, nraw := d.GetChange("object_lock_retain_until_date")
+			o := expandObjectDate(oraw.(string))
+			n := expandObjectDate(nraw.(string))
+			if n == nil || (o != nil && n.Before(*o)) {
+				req.BypassGovernanceRetention = aws.Bool(true)
+			}
+		}
+
+		_, err := conn.PutObjectRetention(req)
+		if err != nil {
+			return fmt.Errorf("error putting S3 object lock retention: %s", err)
+		}
+	}
 
 	if d.HasChange("tags") {
 		o, n := d.GetChange("tags")
@@ -289,6 +359,18 @@ func resourceObjectUpload(d *schema.ResourceData, meta interface{}) error {
 				log.Printf("[WARN] Error closing S3 object source (%s): %s", path, err)
 			}
 		}()
+	} else if v, ok := d.GetOk("content"); ok {
+		content := v.(string)
+		body = bytes.NewReader([]byte(content))
+	} else if v, ok := d.GetOk("content_base64"); ok {
+		content := v.(string)
+		// We can't do streaming decoding here (with base64.NewDecoder) because
+		// the AWS SDK requires an io.ReadSeeker but a base64 decoder can't seek.
+		contentRaw, err := base64.StdEncoding.DecodeString(content)
+		if err != nil {
+			return fmt.Errorf("error decoding content_base64: %s", err)
+		}
+		body = bytes.NewReader(contentRaw)
 	} else {
 		body = bytes.NewReader([]byte{})
 	}
@@ -314,12 +396,24 @@ func resourceObjectUpload(d *schema.ResourceData, meta interface{}) error {
 		input.ContentEncoding = aws.String(v.(string))
 	}
 
+	if v, ok := d.GetOk("content_language"); ok {
+		input.ContentLanguage = aws.String(v.(string))
+	}
+
 	if v, ok := d.GetOk("content_type"); ok {
 		input.ContentType = aws.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("metadata"); ok {
 		input.Metadata = ExpandStringMap(v.(map[string]interface{}))
+	}
+
+	if v, ok := d.GetOk("object_lock_mode"); ok {
+		input.ObjectLockMode = aws.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("object_lock_retain_until_date"); ok {
+		input.ObjectLockRetainUntilDate = expandObjectDate(v.(string))
 	}
 
 	if len(tags) > 0 {
@@ -368,53 +462,6 @@ func DeleteAllObjectVersions(conn *s3.S3, bucketName, key string, force, ignoreO
 
 			if err == nil {
 				nObjects++
-			}
-
-			if tfawserr.ErrCodeEquals(err, "AccessDenied") && force {
-				// Remove any legal hold.
-				resp, err := conn.HeadObject(&s3.HeadObjectInput{
-					Bucket:    aws.String(bucketName),
-					Key:       objectVersion.Key,
-					VersionId: objectVersion.VersionId,
-				})
-
-				if err != nil {
-					log.Printf("[ERROR] Error getting S3 Bucket (%s) Object (%s) Version (%s) metadata: %s", bucketName, objectKey, objectVersionID, err)
-					lastErr = err
-					continue
-				}
-
-				if aws.StringValue(resp.ObjectLockLegalHoldStatus) == s3.ObjectLockLegalHoldStatusOn {
-					_, err := conn.PutObjectLegalHold(&s3.PutObjectLegalHoldInput{
-						Bucket:    aws.String(bucketName),
-						Key:       objectVersion.Key,
-						VersionId: objectVersion.VersionId,
-						LegalHold: &s3.ObjectLockLegalHold{
-							Status: aws.String(s3.ObjectLockLegalHoldStatusOff),
-						},
-					})
-
-					if err != nil {
-						log.Printf("[ERROR] Error putting S3 Bucket (%s) Object (%s) Version(%s) legal hold: %s", bucketName, objectKey, objectVersionID, err)
-						lastErr = err
-						continue
-					}
-
-					// Attempt to delete again.
-					err = deleteObjectVersion(conn, bucketName, objectKey, objectVersionID, force)
-
-					if err != nil {
-						lastErr = err
-					} else {
-						nObjects++
-					}
-
-					continue
-				}
-
-				// AccessDenied for another reason.
-				lastErr = fmt.Errorf("AccessDenied deleting S3 Bucket (%s) Object (%s) Version: %s", bucketName, objectKey, objectVersionID)
-				continue
 			}
 
 			if err != nil {
@@ -524,6 +571,19 @@ func flattenObjectDate(t *time.Time) string {
 	return t.Format(time.RFC3339)
 }
 
+func resourceObjectCustomizeDiff(_ context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	if hasObjectContentChanges(d) {
+		return d.SetNewComputed("version_id")
+	}
+
+	if d.HasChange("source_hash") {
+		d.SetNewComputed("version_id")
+		d.SetNewComputed("etag")
+	}
+
+	return nil
+}
+
 func hasObjectContentChanges(d ResourceDiffer) bool {
 	for _, key := range []string{
 		"cache_control",
@@ -531,8 +591,12 @@ func hasObjectContentChanges(d ResourceDiffer) bool {
 		"content_encoding",
 		"content_language",
 		"content_type",
+		"content",
+		"content_base64",
 		"metadata",
 		"source",
+		"source_hash",
+		"etag",
 	} {
 		if d.HasChange(key) {
 			return true

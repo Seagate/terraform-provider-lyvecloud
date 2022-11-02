@@ -5,12 +5,12 @@ description: |-
     Provides metadata and optionally content of an S3 object
 ---
 
-# lyvecloud_s3_bucket (Data Source)
+# lyvecloud_s3_object (Data Source)
 
 The S3 object data source allows access to the metadata and
 _optionally_ (see below) content of an object stored inside S3 bucket.
 
-**Note:** The content of an object (`body` field) is available only for objects which have a human-readable `Content-Type` (`text/*` and `application/json`). This is to prevent printing unsafe characters and potentially downloading large amount of data which would be thrown away in favour of metadata.
+~> **Note:** The content of an object (`body` field) is available only for objects which have a human-readable `Content-Type` (`text/*` and `application/json`). This is to prevent printing unsafe characters and potentially downloading large amount of data which would be thrown away in favour of metadata.
 
 ## Example Usage
 
@@ -18,13 +18,13 @@ The following example retrieves a text object (which must have a `Content-Type`
 value starting with `text/`) and prints it content:
 
 ```terraform
-data "aws_s3_object" "selected" {
+data "lyvecloud_s3_object" "selected" {
   bucket = "my-tf-bucket"
   key    = "text-file.txt"
 }
 
 output "print_content" {
-  value = aws_s3_object.selected.body
+  value = lyvecloud_s3_object.selected.body
 }
 
 ```
@@ -57,4 +57,4 @@ In addition to all arguments above, the following attributes are exported:
 * `version_id` - The latest version ID of the object returned.
 * `tags`  - A map of tags assigned to the object.
 
-**Note:** Terraform ignores all leading `/`s in the object's `key` and treats multiple `/`s in the rest of the object's `key` as a single `/`, so values of `/index.html` and `index.html` correspond to the same S3 object as do `first//second///third//` and `first/second/third/`.
+-> **Note:** Terraform ignores all leading `/`s in the object's `key` and treats multiple `/`s in the rest of the object's `key` as a single `/`, so values of `/index.html` and `index.html` correspond to the same S3 object as do `first//second///third//` and `first/second/third/`.

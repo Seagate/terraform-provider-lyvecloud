@@ -9,7 +9,7 @@ description: |-
 
 Provides an S3 bucket Object Lock configuration resource, known in the Lyve Cloud console as **Object Immutability**. For more information about Object Locking/Object Immutability, go to [Using object immutability](https://help.lyvecloud.seagate.com/en/using-object-immutability.html) in the Lyve Cloud Administrator's Guide.
 
-**NOTE:** This resource **does not enable** Object Lock for **new** buckets. It configures a default retention period for objects placed in the specified bucket.
+~> **NOTE:** This resource **does not enable** Object Lock for **new** buckets. It configures a default retention period for objects placed in the specified bucket.
 Thus, to **enable** Object Lock for a **new** bucket, see the [Using object lock configuration](s3_bucket.md#Using-object-lock-configuration) section in  the `lyvecloud_s3_bucket` resource or the [Object Lock configuration for a new bucket](#object-lock-configuration-for-a-new-bucket) example below.
 
 

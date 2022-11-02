@@ -98,6 +98,18 @@ func ResourceObjectCopy() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice(s3.MetadataDirective_Values(), false),
 			},
+			"object_lock_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice(s3.ObjectLockMode_Values(), false),
+			},
+			"object_lock_retain_until_date": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.IsRFC3339Time,
+			},
 			"source": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -169,6 +181,9 @@ func resourceObjectCopyRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("content_encoding", resp.ContentEncoding)
 	d.Set("content_language", resp.ContentLanguage)
 	d.Set("content_type", resp.ContentType)
+	d.Set("object_lock_mode", resp.ObjectLockMode)
+	d.Set("object_lock_retain_until_date", flattenObjectDate(resp.ObjectLockRetainUntilDate))
+
 	metadata := PointersMapToStringList(resp.Metadata)
 
 	// AWS Go SDK capitalizes metadata, this is a workaround. https://github.com/aws/aws-sdk-go/issues/445
@@ -231,6 +246,8 @@ func resourceObjectCopyUpdate(d *schema.ResourceData, meta interface{}) error {
 		"key",
 		"metadata",
 		"metadata_directive",
+		"object_lock_mode",
+		"object_lock_retain_until_date",
 		"source",
 		"tagging_directive",
 		"tags",
@@ -324,6 +341,14 @@ func resourceObjectCopyDoCopy(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("tagging_directive"); ok {
 		input.TaggingDirective = aws.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("object_lock_mode"); ok {
+		input.ObjectLockMode = aws.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("object_lock_retain_until_date"); ok {
+		input.ObjectLockRetainUntilDate = expandObjectDate(v.(string))
 	}
 
 	if len(tags) > 0 {

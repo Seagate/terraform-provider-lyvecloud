@@ -9,6 +9,10 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
 )
 
+const (
+	ErrCodeNoSuchTagSet = "NoSuchTagSet"
+)
+
 type KeyValueTags map[string]*TagData
 
 type TagData struct {
@@ -56,6 +60,29 @@ func BucketUpdateTags(conn *s3.S3, identifier string, oldTagsMap interface{}, ne
 	}
 
 	return nil
+}
+
+// BucketListTags lists S3 bucket tags.
+// The identifier is the bucket name.
+func BucketListTags(conn *s3.S3, identifier string) (KeyValueTags, error) {
+	input := &s3.GetBucketTaggingInput{
+		Bucket: aws.String(identifier),
+	}
+
+	output, err := conn.GetBucketTagging(input)
+
+	// S3 API Reference (https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketTagging.html)
+	// lists the special error as NoSuchTagSetError, however the existing logic used NoSuchTagSet
+	// and the AWS Go SDK has neither as a constant.
+	if tfawserr.ErrCodeEquals(err, ErrCodeNoSuchTagSet) {
+		return New(nil), nil
+	}
+
+	if err != nil {
+		return New(nil), err
+	}
+
+	return KeyValueTagsConvertor(output.TagSet), nil
 }
 
 func New(i interface{}) KeyValueTags {
@@ -206,4 +233,15 @@ func ObjectUpdateTags(conn *s3.S3, bucket, key string, oldTagsMap interface{}, n
 	}
 
 	return nil
+}
+
+// KeyValueTags creates tftags.KeyValueTags from s3 service tags.
+func KeyValueTagsConvertor(tags []*s3.Tag) KeyValueTags {
+	m := make(map[string]*string, len(tags))
+
+	for _, tag := range tags {
+		m[aws.StringValue(tag.Key)] = tag.Value
+	}
+
+	return New(m)
 }

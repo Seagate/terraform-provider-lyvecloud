@@ -6,11 +6,13 @@ description: Manage Lyve Cloud with Terraform.
 # Lyve Cloud Provider
 
 This is a terraform provider plugin for managing [Lyve Cloud](https://www.seagate.com/gb/en/services/cloud/storage/) S3 buckets, objects, permissions and service accounts.
-This project is based on code samples from the official [AWS provider](https://github.com/hashicorp/terraform-provider-aws).
+This project is based on the official [AWS provider](https://github.com/hashicorp/terraform-provider-aws).
 
 ## Example Provider Configuration
 
 You can set the credentials of the S3 API to manage buckets and objects, the credentials of the Account API to manage permissions and service accounts, or both.
+
+-> To receive client_id and client_secret, an LCSM ticket needs to be created requesting credentials for the Account API.
 
 ```terraform
 provider "lyvecloud" {
@@ -37,7 +39,7 @@ authentication, in this order, and explained below:
 ### Static API Key
 
 Static credentials can be provided by adding the following variables in-line in the
-Lyve CLoud provider block:
+Lyve Cloud provider block:
 
 
 ```hcl

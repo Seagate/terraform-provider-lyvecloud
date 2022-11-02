@@ -40,6 +40,10 @@ func ResourceServiceAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -62,7 +66,7 @@ func resourceServiceAccountCreate(d *schema.ResourceData, m interface{}) error {
 
 	resp, err := c.CreateServiceAccount(service_account, description, permissions)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating service account: %w", err)
 	}
 
 	d.SetId(resp.ID)
@@ -84,14 +88,14 @@ func resourceServiceAccountUpdate(d *schema.ResourceData, m interface{}) error {
 
 func resourceServiceAccountDelete(d *schema.ResourceData, m interface{}) error {
 	if CheckCredentials(Account, m.(Client)) {
-		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
+		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
 	c := m.(Client).AccApiClient
 
 	_, err := c.DeleteServiceAccount(d.Id())
 	if err != nil {
-		return fmt.Errorf("error deleting service account")
+		return fmt.Errorf("error deleting service account: %w", err)
 	}
 
 	return nil

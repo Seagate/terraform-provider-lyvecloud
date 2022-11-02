@@ -37,13 +37,17 @@ func ResourcePermission() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
 
 func resourceCreatePermission(d *schema.ResourceData, m interface{}) error {
 	if CheckCredentials(Account, m.(Client)) {
-		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
+		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
 	c := m.(Client).AccApiClient
@@ -60,7 +64,7 @@ func resourceCreatePermission(d *schema.ResourceData, m interface{}) error {
 
 	resp, err := c.CreatePermission(permission, description, actions, buckets)
 	if err != nil {
-		return fmt.Errorf("error creating Permission: %w", err)
+		return fmt.Errorf("error creating permission: %w", err)
 	}
 	d.SetId(resp.ID)
 
@@ -79,14 +83,14 @@ func resourceUpdatePermission(d *schema.ResourceData, m interface{}) error {
 
 func resourceDeletePermission(d *schema.ResourceData, m interface{}) error {
 	if CheckCredentials(Account, m.(Client)) {
-		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
+		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
 	c := m.(Client).AccApiClient
 
 	_, err := c.DeletePermission(d.Id())
 	if err != nil {
-		return fmt.Errorf("error deleting permission")
+		return fmt.Errorf("error deleting permission: %w", err)
 	}
 
 	return nil

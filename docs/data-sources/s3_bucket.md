@@ -13,12 +13,12 @@ Provides details about a specific S3 bucket.
 ### Printing bucket's region
 
 ```terraform
-data "aws_s3_bucket" "selected" {
-  bucket = "bucket.test.com"
+data "lyvecloud_s3_bucket" "selected" {
+  bucket = "bucket-test"
 }
 
 output "bucket_region" {
-  value = aws_s3_bucket.selected.region
+  value = lyvecloud_s3_bucket.selected.region
 }
 
 ```

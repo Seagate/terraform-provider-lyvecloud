@@ -42,6 +42,8 @@ The following arguments are optional:
 * `metadata` - (Optional) A map of keys/values to provision metadata (will be automatically prefixed by `x-amz-meta-`, note that only lowercase label are currently supported by the AWS Go API).
 * `metadata_directive` - (Optional) Specifies whether the metadata is copied from the source object or replaced with metadata provided in the request. Valid values are `COPY` and `REPLACE`.
 * `tagging_directive` - (Optional) Specifies whether the object tag-set are copied from the source object or replaced with tag-set provided in the request. Valid values are `COPY` and `REPLACE`.
+* `object_lock_mode` - (Optional) The object lock [retention mode](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html#object-lock-retention-modes) that you want to apply to this object. Valid values are `GOVERNANCE` and `COMPLIANCE`.
+* `object_lock_retain_until_date` - (Optional) The date and time, in [RFC3339 format](https://tools.ietf.org/html/rfc3339#section-5.8), when this object's object lock will [expire](https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html#object-lock-retention-periods).
 * `tags` - (Optional) A map of tags to assign to the object. **Recommended** to use in combination with the `tagging_directive` argument to avoid inconsistent results.
 
 
@@ -53,4 +55,5 @@ In addition to all arguments above, the following attributes are exported:
 * `id` - The `key` of the resource supplied above.
 * `last_modified` - Returns the date that the object was last modified, in [RFC3339 format](https://tools.ietf.org/html/rfc3339#section-5.8).
 * `source_version_id` - Version of the copied object in the source bucket.
+* `tags` - A map of tags assigned to the resource.
 * `version_id` - Version ID of the newly created copy.

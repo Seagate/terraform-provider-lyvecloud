@@ -56,5 +56,39 @@ resource "lyvecloud_permission" "permission" {
 
 For full provider documentation with details on all options available, see [docs](./docs/) folder.
 
-## Tested By
-* Sep 12, 2022: Alexander Chernin (alexander.chernin@seagate.com) on Windows 10.
+## Development
+For development purposes, the provider needs to be built locally.
+
+Clone this repository, and [install Task](https://taskfile.dev/installation/):
+```sh
+go install github.com/go-task/task/v3/cmd/task@latest
+```
+**Note:** for more installation options of [Task](https://taskfile.dev/), please view Task [installation guide](https://taskfile.dev/installation/).
+
+Run the following command to build and install the plugin in the correct folder (resolved automatically based on the OS):
+```sh
+task install
+```
+
+To to use the built-in plugin, use the following configurations:
+```hcl
+terraform {
+  required_providers {
+    lyvecloud = {
+      source  = "registry.terraform.io/seagate/lyvecloud"
+    }
+  }
+}
+
+provider "lyvecloud" {
+  //s3 api - optional
+  region = ""
+  access_key = ""
+  secret_key = ""
+  endpoint_url = ""
+
+  //account api - optional
+  client_id = ""
+  client_secret = ""
+}
+```
