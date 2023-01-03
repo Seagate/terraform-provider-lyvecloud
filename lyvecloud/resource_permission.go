@@ -4,21 +4,21 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourcePermission() *schema.Resource {
 
 	return &schema.Resource{
-		Create: resourceCreatePermission,
-		Read:   resourceReadPermission,
-		Update: resourceUpdatePermission,
-		Delete: resourceDeletePermission,
+		Create: resourcePermissionCreate,
+		Read:   resourcePermissionRead,
+		Update: resourcePermissionUpdate,
+		Delete: resourcePermissionDelete,
 
 		Schema: map[string]*schema.Schema{
 			"permission": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -27,12 +27,15 @@ func ResourcePermission() *schema.Resource {
 			"actions": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					"all-operations",
+					"read-",
+					"write",
+				}, false),
 			},
 			"buckets": {
 				Type:     schema.TypeList,
 				Required: true,
-				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -45,12 +48,12 @@ func ResourcePermission() *schema.Resource {
 	}
 }
 
-func resourceCreatePermission(d *schema.ResourceData, m interface{}) error {
-	if CheckCredentials(Account, m.(Client)) {
+func resourcePermissionCreate(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(Account, meta.(Client)) {
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	c := m.(Client).AccApiClient
+	conn := *meta.(Client).AccApiClient
 
 	permission := d.Get("permission").(string)
 	description := d.Get("description").(string)
@@ -62,33 +65,40 @@ func resourceCreatePermission(d *schema.ResourceData, m interface{}) error {
 		buckets = append(buckets, v.(string))
 	}
 
-	resp, err := c.CreatePermission(permission, description, actions, buckets)
+	permissionInput := Permission{
+		Name:        permission,
+		Description: description,
+		Actions:     actions,
+		Buckets:     buckets,
+	}
+
+	resp, err := conn.CreatePermission(&permissionInput)
 	if err != nil {
 		return fmt.Errorf("error creating permission: %w", err)
 	}
 	d.SetId(resp.ID)
 
-	return resourceReadPermission(d, m)
+	return resourcePermissionRead(d, meta)
 }
 
-func resourceReadPermission(d *schema.ResourceData, m interface{}) error {
+func resourcePermissionRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("id", d.Id())
 	return nil
 }
 
-func resourceUpdatePermission(d *schema.ResourceData, m interface{}) error {
+func resourcePermissionUpdate(d *schema.ResourceData, meta interface{}) error {
 	// currently useless
 	return nil
 }
 
-func resourceDeletePermission(d *schema.ResourceData, m interface{}) error {
-	if CheckCredentials(Account, m.(Client)) {
+func resourcePermissionDelete(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(Account, meta.(Client)) {
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	c := m.(Client).AccApiClient
+	conn := *meta.(Client).AccApiClient
 
-	_, err := c.DeletePermission(d.Id())
+	_, err := conn.DeletePermission(d.Id())
 	if err != nil {
 		return fmt.Errorf("error deleting permission: %w", err)
 	}

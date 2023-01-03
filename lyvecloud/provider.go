@@ -58,7 +58,9 @@ func Provider() *schema.Provider {
 			"lyvecloud_s3_object":                           ResourceObject(),
 			"lyvecloud_s3_object_copy":                      ResourceObjectCopy(),
 			"lyvecloud_permission":                          ResourcePermission(),
+			"lyvecloud_permission_v2":                       ResourcePermission(),
 			"lyvecloud_service_account":                     ResourceServiceAccount(),
+			"lyvecloud_service_account_v2":                  ResourceServiceAccountV2(),
 			"lyvecloud_s3_bucket_object_lock_configuration": ResourceBucketObjectLockConfiguration(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -111,9 +113,15 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 	if (clientId != "") && (clientSecret != "") {
 		accountAPIClient = true
+		// create account api client config
+		credentials := Auth{
+			ClientID:     clientId,
+			ClientSecret: clientSecret,
+		}
+
 		// create account api client
 		var err error
-		accApiClient, err = AuthAccountAPI(clientId, clientSecret)
+		accApiClient, err = AuthAccountAPI(&credentials)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
@@ -138,7 +146,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	// create account api client
-	accApiClient, err = AuthAccountAPI("", "")
+	credentials := Auth{}
+	accApiClient, err = AuthAccountAPI(&credentials)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

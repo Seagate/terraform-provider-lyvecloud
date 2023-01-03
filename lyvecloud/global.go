@@ -3,36 +3,40 @@ package lyvecloud
 import "github.com/aws/aws-sdk-go/service/s3"
 
 type Client struct {
-	S3Client     *s3.S3
-	AccApiClient *AuthData
-}
-
-type AuthData struct {
-	Access_token string
-	Expires_in   int
-	Token_type   string
+	S3Client       *s3.S3
+	AccApiClient   *AuthData
+	AccApiClientV2 *AuthDataV2
 }
 
 const (
-	SlashSeparator = "/"
-	Bearer         = "Bearer "
+	S3           = "s3"
+	Account      = "acc"
+	NoSuchTagSet = "NoSuchTagSet"
+	AccessDenied = "AccessDenied"
 
-	Put           = "PUT"
-	Post          = "POST"
-	Delete        = "DELETE"
-	AccessDenied  = "AccessDenied"
+	// HTTP requests
+	SlashSeparator = "/"
+	Enabled        = "enabled"
+
+	// Account API V1 Auth
+	AudienceUrl       = "https://lyvecloud/customer/api"
+	ClientCredentials = "client_credentials"
+
+	// URLs
+	TokenUrl           = "https://auth.lyve.seagate.com/oauth/token"
+	TokenUrlV2         = "https://api.lyvecloud.seagate.com/v2/auth/token"
+	TokenUrlV2STG      = "https://api.us-west-1-stg.lyvecloud.seagate.com/v2/auth/token"
+	PermissionUrl      = "https://api.lyvecloud.seagate.com/v1/permission"
+	PermissionUrlV2    = "https://api.lyvecloud.seagate.com/v2/permissions/"
+	PermissionUrlV2STG = "https://api.us-west-1-stg.lyvecloud.seagate.com/v2/permissions"
+	SAUrl              = "https://api.lyvecloud.seagate.com/v1/service-account"
+	SAUrlV2            = "https://api.lyvecloud.seagate.com/v2/service-accounts/"
+	SAUrlV2STG         = "https://api.us-west-1-stg.lyvecloud.seagate.com/v2/service-accounts"
+
+	// headers
+	Accept        = "Accept"
+	Bearer        = "Bearer "
 	ContentType   = "Content-Type"
-	NoSuchTagSet  = "NoSuchTagSet"
 	Authorization = "Authorization"
 	Json          = "application/json"
-
-	TokenUrl      = "https://auth.lyve.seagate.com/oauth/token"
-	PermissionUrl = "https://api.lyvecloud.seagate.com/v1/permission"
-	SAUrl         = "https://api.lyvecloud.seagate.com/v1/service-account"
-	ClientReq     = `{"client_id":"%s", "client_secret":"%s", "audience":"https://lyvecloud/customer/api", "grant_type":"client_credentials"}`
-
-	Account = "acc"
-	S3      = "s3"
-
-	UnauthorizedMessage = "unauthorized: incorrect client_id or client_secret values"
 )

@@ -12,7 +12,7 @@ This project is based on the official [AWS provider](https://github.com/hashicor
 
 You can set the credentials of the S3 API to manage buckets and objects, the credentials of the Account API to manage permissions and service accounts, or both.
 
--> To receive client_id and client_secret, an LCSM ticket needs to be created requesting credentials for the Account API.
+-> To receive client_id and client_secret, a support ticket needs to be created requesting credentials for the Account API.
 
 ```terraform
 provider "lyvecloud" {
@@ -83,9 +83,9 @@ resource "lyvecloud_s3_bucket" "my_bucket" {
 
 The following arguments are supported in the `provider` block:
 
-* `access_key` - (Optional) Lyve Cloud access key. Can also be set with the `LYVECLOUD_ACCESS_KEY_ID` environment variable. Must be set to manage S3 resources(buckets and objects). 
+* `access_key` - (Optional) Lyve Cloud access key. Can also be set with the `LYVECLOUD_ACCESS_KEY` environment variable. Must be set to manage S3 resources(buckets and objects). 
 
-* `secret_key` - (Optional) Lyve Cloud secret key. Can also be set with the `LYVECLOUD_SECRET_ACCESS_KEY` environment variable. Must be set to manage S3 resources(buckets and objects).
+* `secret_key` - (Optional) Lyve Cloud secret key. Can also be set with the `LYVECLOUD_SECRET_KEY` environment variable. Must be set to manage S3 resources(buckets and objects).
 
 * `region` - (Optional) Lyve Cloud region where the provider will operate. Can also be set with the `LYVECLOUD_REGION` environment variable. Must be set to manage S3 resources(buckets and objects).
 
