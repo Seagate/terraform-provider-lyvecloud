@@ -32,59 +32,53 @@ type PermissionV2 struct {
 
 // ServiceAccountResponseV2 holds the parsed response from CreateServiceAccount.
 type ServiceAccountResponseV2 struct {
-	ID        string
-	Accesskey string
-	Secret    string
+	ID        string `json:"id"`
+	Accesskey string `json:"accessKey"`
+	Secret    string `json:"secret"`
 }
 
 // GetPermissionResponseV2 holds the parsed response from GetPermissionV2.
 type GetPermissionResponseV2 struct {
-	Id          string
-	Name        string
-	Description string
-	Type        string
-	ReadyState  bool
-	Actions     string
-	Prefix      string
-	Buckets     []string
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Type        string   `json:"type"`
+	ReadyState  bool     `json:"readyState"`
+	Actions     string   `json:"actions"`
+	Prefix      string   `json:"prefix"`
+	Buckets     []string `json:"buckets"`
 }
 
 // GetServiceAccountResponseV2 holds the parsed response from GetServiceAccountV2.
 type GetServiceAccountResponseV2 struct {
-	Id          string
-	Name        string
-	Description string
-	Enabled     bool
-	ReadyState  bool
-	Permissions []string
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Enabled     bool     `json:"enabled"`
+	ReadyState  bool     `json:"readyState"`
+	Permissions []string `json:"permissions"`
 }
 
 // AuthAccountAPIV2 returns access token.
 func AuthAccountAPIV2(credentials *AuthV2) (*AuthDataV2, error) {
-	var client *AuthDataV2
-
 	payload, err := json.Marshal(credentials)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := CreateAndSendRequest(http.MethodPost, TokenUrlV2STG, HeadersAuthV2(), bytes.NewBuffer(payload))
-
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &client); err != nil {
-		return client, err
-	}
-
-	if err != nil {
-		return client, err
+	var client *AuthDataV2
+	if err = json.Unmarshal(resBody, client); err != nil {
+		return nil, err
 	}
 
 	return client, nil
@@ -92,114 +86,116 @@ func AuthAccountAPIV2(credentials *AuthV2) (*AuthDataV2, error) {
 
 // CreatePermissionV2 creates permission.
 func (c *AuthDataV2) CreatePermissionV2(permission *PermissionV2) (*PermissionResponse, error) {
-	var pid *PermissionResponse
-
 	payload, err := json.Marshal(permission)
 	if err != nil {
-		return pid, err
+		return nil, err
 	}
 
 	resp, err := CreateAndSendRequest(http.MethodPost, PermissionUrlV2STG, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
-		return pid, err
+		return nil, err
 	}
+
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return pid, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var permissionId *PermissionResponse
+	if err = json.Unmarshal(resBody, permissionId); err != nil {
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &pid); err != nil {
-		return pid, err
-	}
-
-	if err != nil {
-		return pid, err
-	}
-
-	return pid, nil
+	return permissionId, nil
 }
 
 // GetPermissionV2 retrieves given permission.
 func (c *AuthDataV2) GetPermissionV2(permissionId string) (*GetPermissionResponseV2, error) {
-	var getPermissionResp *GetPermissionResponseV2
-
 	resp, err := CreateAndSendRequest(http.MethodGet, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersGetV2(c), nil)
 	if err != nil {
-		return getPermissionResp, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return getPermissionResp, err
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &getPermissionResp); err != nil {
-		return getPermissionResp, err
+	var getPermissionResp *GetPermissionResponseV2
+	if err = json.Unmarshal(resBody, getPermissionResp); err != nil {
+		return nil, err
 	}
 
 	return getPermissionResp, nil
 }
 
 // DeletePermissionV2 deletes permission.
-func (c *AuthDataV2) DeletePermissionV2(permissionId string) (*http.Response, error) {
-	return CreateAndSendRequest(http.MethodDelete, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersDeleteV2(c), nil)
+func (c *AuthDataV2) DeletePermissionV2(permissionId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersDeleteV2(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // UpdatePermissionV2 updates permission.
-func (c *AuthDataV2) UpdatePermissionV2(permissionId string, permission *PermissionV2) (*http.Response, error) {
+func (c *AuthDataV2) UpdatePermissionV2(permissionId string, permission *PermissionV2) (int, error) {
 	payload, err := json.Marshal(permission)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return CreateAndSendRequest(http.MethodPut, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPut, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // CreateServiceAccountV2 creates service account.
 func (c *AuthDataV2) CreateServiceAccountV2(serviceAccount *ServiceAccount) (*ServiceAccountResponseV2, error) {
-	var sad *ServiceAccountResponseV2
 	payload, err := json.Marshal(serviceAccount)
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
 	resp, err := CreateAndSendRequest(http.MethodPost, SAUrlV2STG, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return sad, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var serviceAccountData *ServiceAccountResponseV2
+	if err := json.Unmarshal(resBody, serviceAccountData); err != nil {
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &sad); err != nil {
-		return sad, err
-	}
-
-	if err != nil {
-		return sad, err
-	}
-
-	return sad, nil
+	return serviceAccountData, nil
 }
 
-// GetServiceAccountV2 retrieves given service account.
 func (c *AuthDataV2) GetServiceAccountV2(serviceAccountId string) (*GetServiceAccountResponseV2, error) {
-	var getServiceAccountResp *GetServiceAccountResponseV2
-
 	resp, err := CreateAndSendRequest(http.MethodGet, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersGetV2(c), nil)
 	if err != nil {
-		return getServiceAccountResp, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return getServiceAccountResp, err
+		return nil, err
 	}
+	defer resp.Body.Close()
 
-	if err = json.Unmarshal(resBody, &getServiceAccountResp); err != nil {
-		return getServiceAccountResp, err
+	var getServiceAccountResp *GetServiceAccountResponseV2
+	if err = json.Unmarshal(resBody, getServiceAccountResp); err != nil {
+		return nil, err
 	}
 
 	return getServiceAccountResp, nil
@@ -207,58 +203,66 @@ func (c *AuthDataV2) GetServiceAccountV2(serviceAccountId string) (*GetServiceAc
 
 // UpdateServiceAccountV2 updates given service account.
 func (c *AuthDataV2) UpdateServiceAccountV2(serviceAccountId string, serviceAccount *ServiceAccount) (*ServiceAccountResponse, error) {
-	var sad *ServiceAccountResponse
+	var serviceAccountData *ServiceAccountResponse
 
 	payload, err := json.Marshal(serviceAccount)
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
 	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return sad, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if err = json.Unmarshal(resBody, serviceAccountData); err != nil {
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &sad); err != nil {
-		return sad, err
-	}
-
-	if err != nil {
-		return sad, err
-	}
-
-	return sad, nil
+	return serviceAccountData, nil
 }
 
 // EnableServiceAccountV2 enables service account.
-func (c *AuthDataV2) EnableServiceAccountV2(serviceAccountId string) (*http.Response, error) {
-	return CreateAndSendRequest(http.MethodPut, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+func (c *AuthDataV2) EnableServiceAccountV2(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // DisableServiceAccountV2 disables service account.
-func (c *AuthDataV2) DisableServiceAccountV2(serviceAccountId string) (*http.Response, error) {
-	return CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+func (c *AuthDataV2) DisableServiceAccountV2(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // DeleteServiceAccountV2 deletes service account.
-func (c *AuthDataV2) DeleteServiceAccountV2(serviceAccountId string) (*http.Response, error) {
-	return CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersDeleteV2(c), nil)
+func (c *AuthDataV2) DeleteServiceAccountV2(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersDeleteV2(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // HeadersAuthV2 returns headers for authorization.
 func HeadersAuthV2() map[string][]string {
 	return map[string][]string{
-		ContentType: {
-			Json,
-		},
-		Accept: {
-			Json,
-		},
+		ContentType: {Json},
+		Accept:      {Json},
 	}
 }
 
@@ -281,14 +285,8 @@ func HeadersDeleteV2(c *AuthDataV2) map[string][]string {
 // HeadersDeleteV2 returns headers for creating permission/service account.
 func HeadersCreateV2(c *AuthDataV2) map[string][]string {
 	return map[string][]string{
-		Authorization: {
-			Bearer + c.Token,
-		},
-		ContentType: {
-			Json,
-		},
-		Accept: {
-			Json,
-		},
+		Authorization: {Bearer + c.Token},
+		ContentType:   {Json},
+		Accept:        {Json},
 	}
 }

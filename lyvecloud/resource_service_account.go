@@ -75,8 +75,8 @@ func resourceServiceAccountCreate(d *schema.ResourceData, meta interface{}) erro
 
 	d.SetId(resp.ID)
 
-	d.Set("access_key", resp.Access_key)
-	d.Set("access_secret", resp.Access_Secret)
+	d.Set("access_key", resp.Accesskey)
+	d.Set("access_secret", resp.AccessSecret)
 	return resourceServiceAccountRead(d, meta)
 }
 
