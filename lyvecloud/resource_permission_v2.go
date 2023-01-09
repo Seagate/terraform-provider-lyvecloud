@@ -16,17 +16,26 @@ func ResourcePermissionV2() *schema.Resource {
 		Delete: resourcePermissionV2Delete,
 
 		Schema: map[string]*schema.Schema{
-			"permission": {
-				Type:     schema.TypeString,
-				Required: true,
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"name_prefix"},
+			},
+			"name_prefix": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
 			},
 			"description": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Optional: true, // should be generated if empty
 			},
 			"type": {
 				Type:     schema.TypeString,
-				Computed: true, // computed based on the chosen argument. all_buckets/bucket_prefix/bucket_names
+				Computed: true, // computed based on the chosen argument. all_buckets/prefix/buckets
 			},
 			"actions": {
 				Type:     schema.TypeString,
@@ -40,19 +49,20 @@ func ResourcePermissionV2() *schema.Resource {
 			"all_buckets": {
 				Type:          schema.TypeBool,
 				Optional:      true,
-				ConflictsWith: []string{"buckets", "bucket-prefix"},
+				ConflictsWith: []string{"buckets", "buckets_prefix"},
 			},
-			"bucket_prefix": {
+			"buckets_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ConflictsWith: []string{"buckets", "all-buckets"},
+				ConflictsWith: []string{"buckets", "all_buckets"},
 			},
-			"bucket_names": {
+			"buckets": {
 				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				ConflictsWith: []string{"buckets_prefix", "all_buckets"},
 			},
 			"ready_state": {
 				Type:     schema.TypeBool,
@@ -71,12 +81,12 @@ func resourcePermissionV2Create(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClientV2
+	conn := *meta.(Client).AccAPIV2Client
 
-	permission := d.Get("permission").(string)
+	name := NameWithSuffix(d.Get("name").(string), d.Get("name_prefix").(string))
 	description := d.Get("description").(string)
 	actions := d.Get("actions").(string)
-	prefix := d.Get("bucket_prefix").(string)
+	prefix := d.Get("buckets_prefix").(string)
 
 	var permissionType string
 	buckets := []string{}
@@ -96,7 +106,7 @@ func resourcePermissionV2Create(d *schema.ResourceData, meta interface{}) error 
 
 	// create input for CreatePermissionV2
 	createPermissinInput := PermissionV2{
-		Name:        permission,
+		Name:        name,
 		Description: description,
 		Type:        permissionType,
 		Actions:     actions,
@@ -118,7 +128,7 @@ func resourcePermissionV2Read(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClientV2
+	conn := *meta.(Client).AccAPIV2Client
 
 	permissionId := d.Id()
 
@@ -129,11 +139,11 @@ func resourcePermissionV2Read(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("id", resp.Id)
-	d.Set("permission", resp.Name)
+	d.Set("name", resp.Name)
 	d.Set("description", resp.Description)
 	d.Set("type", resp.Type)
 	d.Set("actions", resp.Actions)
-	d.Set("bucket_prefix", resp.Prefix)
+	d.Set("buckets_prefix", resp.Prefix)
 	d.Set("bucket_names", resp.Buckets)
 	d.Set("ready_state", resp.ReadyState)
 
@@ -145,24 +155,24 @@ func resourcePermissionV2Update(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClientV2
+	conn := *meta.(Client).AccAPIV2Client
 
 	permissionId := d.Id()
 
-	permission := d.Get("permission").(string)
+	name := NameWithSuffix(d.Get("name").(string), d.Get("name_prefix").(string))
 	description := d.Get("description").(string)
 	actions := d.Get("actions").(string)
-	prefix := d.Get("bucket_prefix").(string)
+	prefix := d.Get("buckets_prefix").(string)
 
 	var permissionType string
 	buckets := []string{}
 
 	if _, ok := d.GetOk("all_buckets"); ok {
 		permissionType = "all-buckets"
-	} else if v, ok := d.GetOk("bucket_prefix"); ok {
+	} else if v, ok := d.GetOk("buckets_prefix"); ok {
 		permissionType = "bucket-prefix"
 		buckets = append(buckets, v.(string))
-	} else if _, ok := d.GetOk("bucket_names"); ok {
+	} else if _, ok := d.GetOk("buckets"); ok {
 		permissionType = "bucket-names"
 		bucketsList := d.Get("buckets").([]interface{})
 		for _, v := range bucketsList {
@@ -171,7 +181,7 @@ func resourcePermissionV2Update(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	updatePermissinInput := PermissionV2{
-		Name:        permission,
+		Name:        name,
 		Description: description,
 		Type:        permissionType,
 		Actions:     actions,
@@ -192,7 +202,7 @@ func resourcePermissionV2Delete(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClientV2
+	conn := *meta.(Client).AccAPIV2Client
 
 	_, err := conn.DeletePermissionV2(d.Id())
 	if err != nil {

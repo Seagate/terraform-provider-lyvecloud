@@ -4,8 +4,8 @@ import "github.com/aws/aws-sdk-go/service/s3"
 
 type Client struct {
 	S3Client       *s3.S3
-	AccApiClient   *AuthData
-	AccApiClientV2 *AuthDataV2
+	AccAPIV1Client *AuthData
+	AccAPIV2Client *AuthDataV2
 }
 
 const (

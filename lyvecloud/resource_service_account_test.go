@@ -35,7 +35,7 @@ func TestAccCreateServiceAccount_Basic(t *testing.T) {
 }
 
 func testAccCheckServiceAccountDestroy(s *terraform.State) error {
-	conn := testAccProvider.Meta().(Client).AccApiClient
+	conn := testAccProvider.Meta().(Client).AccAPIV1Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "lyvecloud_service_account" {

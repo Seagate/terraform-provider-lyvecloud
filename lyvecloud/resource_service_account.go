@@ -21,7 +21,7 @@ func ResourceServiceAccount() *schema.Resource {
 			},
 			"description": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Optional: true, // should be generated if left empty
 			},
 			"permissions": {
 				Type:     schema.TypeList,
@@ -51,7 +51,7 @@ func resourceServiceAccountCreate(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClient
+	conn := *meta.(Client).AccAPIV1Client
 
 	service_account := d.Get("service_account").(string)
 	description := d.Get("description").(string)
@@ -86,7 +86,7 @@ func resourceServiceAccountRead(d *schema.ResourceData, meta interface{}) error 
 }
 
 func resourceServiceAccountUpdate(d *schema.ResourceData, meta interface{}) error {
-	// currently useless
+	// not supported in account api v1
 	return nil
 }
 
@@ -95,7 +95,7 @@ func resourceServiceAccountDelete(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
 	}
 
-	conn := *meta.(Client).AccApiClient
+	conn := *meta.(Client).AccAPIV1Client
 
 	_, err := conn.DeleteServiceAccount(d.Id())
 	if err != nil {

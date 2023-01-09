@@ -54,7 +54,7 @@ func TestAccCreatePermission_Prefix(t *testing.T) {
 }
 
 func testAccCheckPermissionDestroy(s *terraform.State) error {
-	conn := testAccProvider.Meta().(Client).AccApiClient
+	conn := testAccProvider.Meta().(Client).AccAPIV1Client
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "lyvecloud_permission" {
@@ -77,7 +77,7 @@ resource "lyvecloud_s3_bucket" "test" {
 }
 
 resource "lyvecloud_permission" "test" {
-	permission = %[2]q
+	name = %[2]q
 	description = ""
 	actions = "all-operations"
 	buckets = [lyvecloud_s3_bucket.test.bucket]
@@ -96,7 +96,7 @@ resource "lyvecloud_s3_bucket" "test2" {
 }
 
 resource "lyvecloud_permission" "test" {
-	permission = %[3]q
+	name = %[3]q
 	description = ""
 	actions = "all-operations" // “all-operations”, “read”, or “write”.
 	buckets = ["tf-test-bucket*"]

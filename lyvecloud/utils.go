@@ -10,7 +10,7 @@ func CheckCredentials(cType string, client Client) bool {
 			return false
 		}
 	} else if cType == "acc" {
-		if client.AccApiClient == nil {
+		if client.AccAPIV1Client == nil {
 			return true
 		} else {
 			return false
