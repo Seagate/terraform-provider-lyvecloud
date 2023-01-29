@@ -21,7 +21,7 @@ func ResourceServiceAccountV2() *schema.Resource {
 			},
 			"description": {
 				Type:     schema.TypeString,
-				Optional: true, // should be generated if empty
+				Optional: true,
 			},
 			"permissions": {
 				Type:     schema.TypeList,
@@ -30,7 +30,7 @@ func ResourceServiceAccountV2() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"accessKey": {
+			"access_key": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -55,13 +55,13 @@ func ResourceServiceAccountV2() *schema.Resource {
 }
 
 func resourceServiceAccountV2Create(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
+	if CheckCredentials(AccountAPIV2, meta.(Client)) {
+		return fmt.Errorf("credentials for account api v2 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV2Client
 
-	service_account := d.Get("service_account").(string)
+	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	permissionsList := d.Get("permissions").([]interface{})
 
@@ -71,7 +71,7 @@ func resourceServiceAccountV2Create(d *schema.ResourceData, meta interface{}) er
 	}
 
 	serviceAccountInput := ServiceAccount{
-		Name:        service_account,
+		Name:        name,
 		Description: description,
 		Permissions: permissions,
 	}
@@ -84,14 +84,14 @@ func resourceServiceAccountV2Create(d *schema.ResourceData, meta interface{}) er
 	d.SetId(resp.ID)
 
 	d.Set("access_key", resp.Accesskey)
-	d.Set("access_secret", resp.Secret)
+	d.Set("secret", resp.Secret)
 
 	return resourceServiceAccountV2Read(d, meta)
 }
 
 func resourceServiceAccountV2Read(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+	if CheckCredentials(AccountAPIV2, meta.(Client)) {
+		return fmt.Errorf("credentials for account api v2 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV2Client
@@ -100,14 +100,13 @@ func resourceServiceAccountV2Read(d *schema.ResourceData, meta interface{}) erro
 
 	resp, err := conn.GetServiceAccountV2(serviceAccountId)
 	if err != nil {
-		return fmt.Errorf("error reading service account: %w", err)
-		// try to remove it if error?
+		return fmt.Errorf("error reading service account (%s): %w", serviceAccountId, err)
 	}
 
 	d.Set("id", resp.Id)
-	d.Set("service_account", resp.Name)
+	d.Set("name", resp.Name)
 	d.Set("description", resp.Description)
-	d.Set("readyState", resp.ReadyState)
+	d.Set("ready_state", resp.ReadyState)
 	d.Set("permissions", resp.Permissions)
 	d.Set("enabled", resp.Enabled)
 
@@ -115,15 +114,15 @@ func resourceServiceAccountV2Read(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceServiceAccountV2Update(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+	if CheckCredentials(AccountAPIV2, meta.(Client)) {
+		return fmt.Errorf("credentials for account api v2 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV2Client
 
 	serviceAccountId := d.Id()
 
-	service_account := d.Get("service_account").(string)
+	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	permissionsList := d.Get("permissions").([]interface{})
 
@@ -133,7 +132,7 @@ func resourceServiceAccountV2Update(d *schema.ResourceData, meta interface{}) er
 	}
 
 	updateServiceAccountInput := ServiceAccount{
-		Name:        service_account,
+		Name:        name,
 		Description: description,
 		Permissions: permissions,
 	}
@@ -147,8 +146,8 @@ func resourceServiceAccountV2Update(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceServiceAccountV2Delete(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+	if CheckCredentials(AccountAPIV2, meta.(Client)) {
+		return fmt.Errorf("credentials for account api v2 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV2Client

@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  PLUGIN_VERSION: 0.1.3
+  PLUGIN_VERSION: 0.2.0
   OUTPUT_FILENAME: terraform-provider-lyvecloud
 
 tasks:

@@ -18,12 +18,20 @@ func ResourcePermission() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name_prefix"},
+			},
+			"name_prefix": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
 			},
 			"description": {
 				Type:     schema.TypeString,
-				Optional: true, // should be generated if left empty
+				Optional: true,
 			},
 			"actions": {
 				Type:     schema.TypeString,
@@ -50,8 +58,9 @@ func ResourcePermission() *schema.Resource {
 }
 
 func resourcePermissionCreate(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+	// Check for AAPIV1 credentials.
+	if CheckCredentials(AccountAPIV1, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV1Client
@@ -61,19 +70,19 @@ func resourcePermissionCreate(d *schema.ResourceData, meta interface{}) error {
 	actions := d.Get("actions").(string)
 	bucketsList := d.Get("buckets").([]interface{})
 
-	buckets := []string{}
-	for _, v := range bucketsList {
-		buckets = append(buckets, v.(string))
+	buckets, err := convertBucketsList(bucketsList)
+	if err != nil {
+		return fmt.Errorf("error creating permission: %w", err)
 	}
 
-	permissionInput := Permission{
+	createPermissionInput := Permission{
 		Name:        name,
 		Description: description,
 		Actions:     actions,
 		Buckets:     buckets,
 	}
 
-	resp, err := conn.CreatePermission(&permissionInput)
+	resp, err := conn.CreatePermission(&createPermissionInput)
 	if err != nil {
 		return fmt.Errorf("error creating permission: %w", err)
 	}
@@ -83,6 +92,7 @@ func resourcePermissionCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourcePermissionRead(d *schema.ResourceData, meta interface{}) error {
+	// not supported in account api v1
 	d.Set("id", d.Id())
 	return nil
 }
@@ -93,13 +103,14 @@ func resourcePermissionUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourcePermissionDelete(d *schema.ResourceData, meta interface{}) error {
-	if CheckCredentials(Account, meta.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+	if CheckCredentials(AccountAPIV1, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV1Client
 
 	_, err := conn.DeletePermission(d.Id())
+
 	if err != nil {
 		return fmt.Errorf("error deleting permission: %w", err)
 	}
@@ -118,4 +129,16 @@ func NameWithSuffix(name string, namePrefix string) string {
 	}
 
 	return resource.UniqueId()
+}
+
+func convertBucketsList(bucketsList []interface{}) ([]string, error) {
+	buckets := []string{}
+	for _, v := range bucketsList {
+		str, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("error converting bucket: expected string, got %T", v)
+		}
+		buckets = append(buckets, str)
+	}
+	return buckets, nil
 }

@@ -80,13 +80,13 @@ func Provider() *schema.Provider {
 				Description: "The credentials for the Account API v2 are used to manage permissions and service accounts.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"accountId": {
+						"account_id": {
 							Type:        schema.TypeString,
 							Required:    true,
 							Description: "Unique identifier of the Lyve Cloud Account API v2.",
 							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV2_ACCOUNT_ID", nil),
 						},
-						"accessKey": {
+						"access_key": {
 							Type:        schema.TypeString,
 							Required:    true,
 							Description: "The access key is generated when you generate Account API v2 credentails.",
@@ -137,7 +137,7 @@ func createS3Client(region, accessKey, secretKey, endpointUrl string) (*s3.S3, e
 	return client, nil
 }
 
-// createAccApiClient creates Account API v1 client.
+// createAccAPIV1Client creates Account API v1 client.
 func createAccAPIV1Client(clientId, clientSecret string) (*AuthData, error) {
 	credentials := Auth{
 		ClientID:     clientId,
@@ -150,7 +150,7 @@ func createAccAPIV1Client(clientId, clientSecret string) (*AuthData, error) {
 	return accApiClient, nil
 }
 
-// createAccApiClient creates Account API v1 client.
+// createAccAPIV2Client creates Account API v1 client.
 func createAccAPIV2Client(accountId, accessKey, secret string) (*AuthDataV2, error) {
 	credentials := AuthV2{
 		AccountID: accountId,
@@ -234,13 +234,13 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 		var accountId, accessKey, secret string
 
-		if v, ok := accountAPIV2Attr["accountId"].(string); ok && v != "" {
+		if v, ok := accountAPIV2Attr["account_id"].(string); ok && v != "" {
 			accountId = v
 		} else {
 			return nil, diag.FromErr(errors.New("accountId must be set and contain a non-empty value"))
 		}
 
-		if v, ok := accountAPIV2Attr["accessKey"].(string); ok && v != "" {
+		if v, ok := accountAPIV2Attr["access_key"].(string); ok && v != "" {
 			accessKey = v
 		} else {
 			return nil, diag.FromErr(errors.New("accessKey must be set and contain a non-empty value"))

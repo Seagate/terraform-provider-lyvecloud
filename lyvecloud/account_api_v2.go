@@ -77,7 +77,7 @@ func AuthAccountAPIV2(credentials *AuthV2) (*AuthDataV2, error) {
 	}
 
 	var client *AuthDataV2
-	if err = json.Unmarshal(resBody, client); err != nil {
+	if err = json.Unmarshal(resBody, &client); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (c *AuthDataV2) CreatePermissionV2(permission *PermissionV2) (*PermissionRe
 	defer resp.Body.Close()
 
 	var permissionId *PermissionResponse
-	if err = json.Unmarshal(resBody, permissionId); err != nil {
+	if err = json.Unmarshal(resBody, &permissionId); err != nil {
 		return nil, err
 	}
 
@@ -123,7 +123,7 @@ func (c *AuthDataV2) GetPermissionV2(permissionId string) (*GetPermissionRespons
 	}
 
 	var getPermissionResp *GetPermissionResponseV2
-	if err = json.Unmarshal(resBody, getPermissionResp); err != nil {
+	if err = json.Unmarshal(resBody, &getPermissionResp); err != nil {
 		return nil, err
 	}
 
@@ -174,7 +174,7 @@ func (c *AuthDataV2) CreateServiceAccountV2(serviceAccount *ServiceAccount) (*Se
 	defer resp.Body.Close()
 
 	var serviceAccountData *ServiceAccountResponseV2
-	if err := json.Unmarshal(resBody, serviceAccountData); err != nil {
+	if err := json.Unmarshal(resBody, &serviceAccountData); err != nil {
 		return nil, err
 	}
 
@@ -194,7 +194,7 @@ func (c *AuthDataV2) GetServiceAccountV2(serviceAccountId string) (*GetServiceAc
 	defer resp.Body.Close()
 
 	var getServiceAccountResp *GetServiceAccountResponseV2
-	if err = json.Unmarshal(resBody, getServiceAccountResp); err != nil {
+	if err = json.Unmarshal(resBody, &getServiceAccountResp); err != nil {
 		return nil, err
 	}
 
@@ -221,7 +221,7 @@ func (c *AuthDataV2) UpdateServiceAccountV2(serviceAccountId string, serviceAcco
 	}
 	defer resp.Body.Close()
 
-	if err = json.Unmarshal(resBody, serviceAccountData); err != nil {
+	if err = json.Unmarshal(resBody, &serviceAccountData); err != nil {
 		return nil, err
 	}
 

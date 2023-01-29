@@ -10,7 +10,8 @@ type Client struct {
 
 const (
 	S3           = "s3"
-	Account      = "acc"
+	AccountAPIV1 = "acc"
+	AccountAPIV2 = "accv2"
 	NoSuchTagSet = "NoSuchTagSet"
 	AccessDenied = "AccessDenied"
 

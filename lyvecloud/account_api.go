@@ -79,7 +79,7 @@ func AuthAccountAPI(credentials *Auth) (*AuthData, error) {
 	defer resp.Body.Close()
 
 	var client *AuthData
-	if err = json.Unmarshal(resBody, client); err != nil {
+	if err = json.Unmarshal(resBody, &client); err != nil {
 		return nil, err
 	}
 
@@ -105,7 +105,7 @@ func (c *AuthData) CreatePermission(permission *Permission) (*PermissionResponse
 	defer resp.Body.Close()
 
 	var permissionId *PermissionResponse
-	if err = json.Unmarshal(resBody, permissionId); err != nil {
+	if err = json.Unmarshal(resBody, &permissionId); err != nil {
 		return nil, err
 	}
 
@@ -141,7 +141,7 @@ func (c *AuthData) CreateServiceAccount(serviceAccount *ServiceAccount) (*Servic
 	defer resp.Body.Close()
 
 	var serviceAccountData *ServiceAccountResponse
-	if err = json.Unmarshal(resBody, serviceAccountData); err != nil {
+	if err = json.Unmarshal(resBody, &serviceAccountData); err != nil {
 		return nil, err
 	}
 
@@ -179,7 +179,7 @@ func CreateAndSendRequest(method, url string, headers map[string][]string, body 
 
 		// parse the JSON response into a Go struct
 		var errResponse *ErrorResponse
-		if err := json.Unmarshal([]byte(resBody), errResponse); err != nil {
+		if err := json.Unmarshal([]byte(resBody), &errResponse); err != nil {
 			return nil, err
 		}
 
