@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 // Auth specifies parameters for AuthAccountAPI.
@@ -46,7 +47,7 @@ type ServiceAccount struct {
 // ServiceAccountResponse holds the parsed response from CreateServiceAccount.
 type ServiceAccountResponse struct {
 	ID           string `json:"Id"`
-	Accesskey    string `json:"accessKey"`
+	Accesskey    string `json:"access_key"`
 	AccessSecret string `json:"access_secret"`
 }
 
@@ -183,11 +184,13 @@ func CreateAndSendRequest(method, url string, headers map[string][]string, body 
 			return nil, err
 		}
 
-		// check the status code and return either the "error" field or the "message" field
+		// check the status code and return either the "error" field or the "code" field
 		if errResponse.Error != "" {
 			return nil, errors.New(errResponse.Error)
-		} else {
-			return nil, errors.New(errResponse.Message)
+		} else if code, ok := errResponse.Code.(string); ok {
+			return nil, errors.New(code)
+		} else if code, ok := errResponse.Code.(int); ok {
+			return nil, errors.New(strconv.Itoa(code))
 		}
 	}
 

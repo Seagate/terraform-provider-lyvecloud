@@ -242,6 +242,10 @@ func DeleteResource(resource *schema.Resource, d *schema.ResourceData, meta inte
 
 func testAccBucketObjectLockConfigurationConfig_basic(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 
@@ -263,6 +267,10 @@ resource "lyvecloud_s3_bucket_object_lock_configuration" "test" {
 
 func testAccBucketObjectLockConfigurationConfig_update(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 

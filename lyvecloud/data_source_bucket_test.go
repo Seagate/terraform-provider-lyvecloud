@@ -11,7 +11,7 @@ import (
 
 func TestAccS3BucketDataSource_basic(t *testing.T) {
 	bucketName := sdkacctest.RandomWithPrefix("tf-test-bucket")
-	region := os.Getenv("LYVECLOUD_REGION")
+	region := os.Getenv("LYVECLOUD_S3_REGION")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -30,6 +30,10 @@ func TestAccS3BucketDataSource_basic(t *testing.T) {
 
 func testAccBucketDataSourceConfig_basic(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "bucket" {
   bucket = %[1]q
 }

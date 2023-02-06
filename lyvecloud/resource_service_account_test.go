@@ -53,19 +53,24 @@ func testAccCheckServiceAccountDestroy(s *terraform.State) error {
 
 func testCreateServiceAccount_Basic(bucketName, permissionName, serviceAccountName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+	account_v1 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
 	bucket = %[1]q
 }
 
 resource "lyvecloud_permission" "test" {
-	permission = %[2]q
+	name = %[2]q
 	description = ""
 	actions = "all-operations"
 	buckets = [lyvecloud_s3_bucket.test.bucket]
 }
 
 resource "lyvecloud_service_account" "test" {
-	service_account = %[3]q
+	name = %[3]q
 	description = ""
 	permissions = [lyvecloud_permission.test.id]
 }

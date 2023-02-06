@@ -797,6 +797,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_empty(rName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -810,6 +814,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_source(rName string, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -825,6 +833,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_content(rName string, content string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -839,6 +851,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_etagEncryption(rName string, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -854,6 +870,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_contentBase64(rName string, contentBase64 string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -868,6 +888,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_sourceHashTrigger(rName string, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -883,6 +907,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_contentCharacteristics(rName string, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -899,6 +927,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_nonVersioned(rName string, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "object_bucket_3" {
   bucket = %[1]q
 }
@@ -914,6 +946,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_updateable(rName string, bucketVersioning bool, source string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "object_bucket_3" {
   bucket = %[1]q
   object_lock_enabled = true
@@ -931,6 +967,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_metadata(rName string, metadataKey1, metadataValue1, metadataKey2, metadataValue2 string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 }
@@ -949,6 +989,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_tags(rName, key, content string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
   object_lock_enabled = true
@@ -970,6 +1014,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_updatedTags(rName, key, content string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
   object_lock_enabled = true
@@ -992,6 +1040,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_noTags(rName, key, content string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
   object_lock_enabled = true
@@ -1007,6 +1059,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_noLockRetention(rName string, content string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 
@@ -1024,6 +1080,10 @@ resource "lyvecloud_s3_object" "object" {
 
 func testAccObjectConfig_lockRetention(rName string, content, retainUntilDate string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 

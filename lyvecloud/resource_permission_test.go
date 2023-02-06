@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccCreatePermission_Basic(t *testing.T) {
@@ -72,6 +71,11 @@ func testAccCheckPermissionDestroy(s *terraform.State) error {
 
 func testCreatePermission_Basic(bucketName, permissionName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+	account_v1 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
 	bucket = %[1]q
 }
@@ -87,8 +91,13 @@ resource "lyvecloud_permission" "test" {
 
 func testCreatePermission_Prefix(bucketName1, bucketName2, permissionName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+	account_v1 {}
+}
+
 resource "lyvecloud_s3_bucket" "test1" {
-  bucket = %[1]q
+	bucket = %[1]q
 }
 
 resource "lyvecloud_s3_bucket" "test2" {

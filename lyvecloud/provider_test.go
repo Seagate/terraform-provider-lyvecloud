@@ -32,22 +32,31 @@ func TestProvider_impl(t *testing.T) {
 func testAccPreCheck(t *testing.T) {
 	ok := os.Getenv("TF_ACC") == "1"
 
-	if os.Getenv("LYVECLOUD_REGION") != "" {
+	if os.Getenv("LYVECLOUD_S3_REGION") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_ACCESS_KEY") != "" {
+	if os.Getenv("LYVECLOUD_S3_ACCESS_KEY") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_SECRET_KEY") != "" {
+	if os.Getenv("LYVECLOUD_S3_SECRET_KEY") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_ENDPOINT") != "" {
+	if os.Getenv("LYVECLOUD_S3_ENDPOINT") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_CLIENT_ID") != "" {
+	if os.Getenv("LYVECLOUD_AAPIV1_CLIENT_ID") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_CLIENT_SECRET") != "" {
+	if os.Getenv("LYVECLOUD_AAPIV1_CLIENT_SECRET") != "" {
+		ok = true
+	}
+	if os.Getenv("LYVECLOUD_S3_ACCESS_KEY") != "" {
+		ok = true
+	}
+	if os.Getenv("LYVECLOUD_S3_SECRET_KEY") != "" {
+		ok = true
+	}
+	if os.Getenv("LYVECLOUD_S3_REGION") != "" {
 		ok = true
 	}
 	if !ok {

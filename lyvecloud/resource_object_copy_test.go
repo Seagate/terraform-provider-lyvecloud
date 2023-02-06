@@ -88,6 +88,10 @@ func testAccCheckObjectCopyExists(n string) resource.TestCheckFunc {
 
 func testAccObjectCopyConfig_basic(rName1, sourceKey, rName2, key string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "source" {
   bucket = %[1]q
 }

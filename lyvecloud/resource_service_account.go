@@ -15,7 +15,7 @@ func ResourceServiceAccount() *schema.Resource {
 		Delete: resourceServiceAccountDelete,
 
 		Schema: map[string]*schema.Schema{
-			"service_account": {
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -48,12 +48,12 @@ func ResourceServiceAccount() *schema.Resource {
 
 func resourceServiceAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	if CheckCredentials(AccountAPIV1, meta.(Client)) {
-		return fmt.Errorf("credentials for account api are missing")
+		return fmt.Errorf("credentials for account api v1 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV1Client
 
-	service_account := d.Get("service_account").(string)
+	service_account := d.Get("name").(string)
 	description := d.Get("description").(string)
 	permissionsList := d.Get("permissions").([]interface{})
 
@@ -92,7 +92,7 @@ func resourceServiceAccountUpdate(d *schema.ResourceData, meta interface{}) erro
 
 func resourceServiceAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	if CheckCredentials(AccountAPIV1, meta.(Client)) {
-		return fmt.Errorf("credentials for account api are missing")
+		return fmt.Errorf("credentials for account api v1 are missing")
 	}
 
 	conn := *meta.(Client).AccAPIV1Client

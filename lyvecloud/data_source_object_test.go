@@ -149,6 +149,10 @@ func testAccCheckObjectExistsDataSource(n string, obj *s3.GetObjectOutput) resou
 
 func testAccObjectDataSourceConfig_basic(randInt int) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "object_bucket" {
   bucket = "tf-object-test-bucket-%[1]d"
 }
@@ -168,6 +172,10 @@ data "lyvecloud_s3_object" "obj" {
 
 func testAccObjectDataSourceConfig_readableBody(randInt int) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "object_bucket" {
   bucket = "tf-object-test-bucket-%[1]d"
 }
@@ -188,6 +196,10 @@ data "lyvecloud_s3_object" "obj" {
 
 func testAccObjectDataSourceConfig_allParams(randInt int) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "object_bucket" {
   bucket = "tf-object-test-bucket-%[1]d"
   object_lock_enabled = true
