@@ -184,7 +184,7 @@ func CreateAndSendRequest(method, url string, headers map[string][]string, body 
 			return nil, err
 		}
 
-		// check the status code and return either the "error" field or the "code" field
+		// return either the "error" field or the "code" field
 		if errResponse.Error != "" {
 			return nil, errors.New(errResponse.Error)
 		} else if code, ok := errResponse.Code.(string); ok {

@@ -28,6 +28,7 @@ type PermissionV2 struct {
 	Actions     string   `json:"actions"` // all-operations/read-only/write-only
 	Prefix      string   `json:"prefix"`
 	Buckets     []string `json:"buckets"`
+	Policy      string   `json:"policy"`
 }
 
 // ServiceAccountResponseV2 holds the parsed response from CreateServiceAccount.
@@ -47,6 +48,7 @@ type GetPermissionResponseV2 struct {
 	Actions     string   `json:"actions"`
 	Prefix      string   `json:"prefix"`
 	Buckets     []string `json:"buckets"`
+	Policy      string   `json:"policy"`
 }
 
 // GetServiceAccountResponseV2 holds the parsed response from GetServiceAccountV2.
@@ -66,7 +68,7 @@ func AuthAccountAPIV2(credentials *AuthV2) (*AuthDataV2, error) {
 		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(http.MethodPost, TokenUrlV2STG, HeadersAuthV2(), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPost, TokenUrlV2, HeadersAuthV2(), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +93,7 @@ func (c *AuthDataV2) CreatePermissionV2(permission *PermissionV2) (*PermissionRe
 		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(http.MethodPost, PermissionUrlV2STG, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPost, PermissionUrlV2, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +114,7 @@ func (c *AuthDataV2) CreatePermissionV2(permission *PermissionV2) (*PermissionRe
 
 // GetPermissionV2 retrieves given permission.
 func (c *AuthDataV2) GetPermissionV2(permissionId string) (*GetPermissionResponseV2, error) {
-	resp, err := CreateAndSendRequest(http.MethodGet, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersGetV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodGet, PermissionUrlV2+SlashSeparator+permissionId, HeadersGetV2(c), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +134,7 @@ func (c *AuthDataV2) GetPermissionV2(permissionId string) (*GetPermissionRespons
 
 // DeletePermissionV2 deletes permission.
 func (c *AuthDataV2) DeletePermissionV2(permissionId string) (int, error) {
-	resp, err := CreateAndSendRequest(http.MethodDelete, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersDeleteV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodDelete, PermissionUrlV2+SlashSeparator+permissionId, HeadersDeleteV2(c), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -147,7 +149,7 @@ func (c *AuthDataV2) UpdatePermissionV2(permissionId string, permission *Permiss
 		return 0, err
 	}
 
-	resp, err := CreateAndSendRequest(http.MethodPut, PermissionUrlV2STG+SlashSeparator+permissionId, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPut, PermissionUrlV2+SlashSeparator+permissionId, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
 		return 0, err
 	}
@@ -162,7 +164,7 @@ func (c *AuthDataV2) CreateServiceAccountV2(serviceAccount *ServiceAccount) (*Se
 		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(http.MethodPost, SAUrlV2STG, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPost, SAUrlV2, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,7 @@ func (c *AuthDataV2) CreateServiceAccountV2(serviceAccount *ServiceAccount) (*Se
 }
 
 func (c *AuthDataV2) GetServiceAccountV2(serviceAccountId string) (*GetServiceAccountResponseV2, error) {
-	resp, err := CreateAndSendRequest(http.MethodGet, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersGetV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodGet, SAUrlV2+SlashSeparator+serviceAccountId, HeadersGetV2(c), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +212,7 @@ func (c *AuthDataV2) UpdateServiceAccountV2(serviceAccountId string, serviceAcco
 		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersCreateV2(c), bytes.NewBuffer(payload))
+	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2+SlashSeparator+serviceAccountId, HeadersCreateV2(c), bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +232,7 @@ func (c *AuthDataV2) UpdateServiceAccountV2(serviceAccountId string, serviceAcco
 
 // EnableServiceAccountV2 enables service account.
 func (c *AuthDataV2) EnableServiceAccountV2(serviceAccountId string) (int, error) {
-	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodPut, SAUrlV2+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -240,7 +242,7 @@ func (c *AuthDataV2) EnableServiceAccountV2(serviceAccountId string) (int, error
 
 // DisableServiceAccountV2 disables service account.
 func (c *AuthDataV2) DisableServiceAccountV2(serviceAccountId string) (int, error) {
-	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGetV2(c), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -250,7 +252,7 @@ func (c *AuthDataV2) DisableServiceAccountV2(serviceAccountId string) (int, erro
 
 // DeleteServiceAccountV2 deletes service account.
 func (c *AuthDataV2) DeleteServiceAccountV2(serviceAccountId string) (int, error) {
-	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2STG+SlashSeparator+serviceAccountId, HeadersDeleteV2(c), nil)
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrlV2+SlashSeparator+serviceAccountId, HeadersDeleteV2(c), nil)
 	if err != nil {
 		return 0, err
 	}
