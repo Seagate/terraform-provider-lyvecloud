@@ -44,19 +44,13 @@ func testAccPreCheck(t *testing.T) {
 	if os.Getenv("LYVECLOUD_S3_ENDPOINT") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_AAPIV1_CLIENT_ID") != "" {
+	if os.Getenv("LYVECLOUD_ACCOUNT_ID") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_AAPIV1_CLIENT_SECRET") != "" {
+	if os.Getenv("LYVECLOUD_ACCOUNT_ACCESS_KEY") != "" {
 		ok = true
 	}
-	if os.Getenv("LYVECLOUD_S3_ACCESS_KEY") != "" {
-		ok = true
-	}
-	if os.Getenv("LYVECLOUD_S3_SECRET_KEY") != "" {
-		ok = true
-	}
-	if os.Getenv("LYVECLOUD_S3_REGION") != "" {
+	if os.Getenv("LYVECLOUD_ACCOUNT_SECRET") != "" {
 		ok = true
 	}
 	if !ok {

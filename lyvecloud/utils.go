@@ -11,13 +11,7 @@ func CheckCredentials(cType string, client Client) bool {
 			return false
 		}
 	} else if cType == "acc" {
-		if client.AccAPIV1Client == nil {
-			return true
-		} else {
-			return false
-		}
-	} else if cType == "accv2" {
-		if client.AccAPIV2Client == nil {
+		if client.AccountAPIClient == nil {
 			return true
 		} else {
 			return false

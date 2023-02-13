@@ -51,52 +51,30 @@ func Provider() *schema.Provider {
 					},
 				},
 			},
-			"account_v1": {
+			"account": {
 				Type:        schema.TypeList,
 				Optional:    true,
 				MaxItems:    1,
-				Description: "The credentials for the Account API v1 are used to manage permissions and service accounts.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"client_id": {
-							Type:        schema.TypeString,
-							Required:    true,
-							Description: "The client ID for Account API v1 operations.",
-							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV1_CLIENT_ID", nil),
-						},
-						"client_secret": {
-							Type:        schema.TypeString,
-							Required:    true,
-							Description: "The client secret for Account API v1 operations.",
-							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV1_CLIENT_SECRET", nil),
-						},
-					},
-				},
-			},
-			"account_v2": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				MaxItems:    1,
-				Description: "The credentials for the Account API v2 are used to manage permissions and service accounts.",
+				Description: "The credentials for the Account API are used to manage permissions and service accounts.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"account_id": {
 							Type:        schema.TypeString,
 							Required:    true,
-							Description: "Unique identifier of the Lyve Cloud Account API v2.",
-							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV2_ACCOUNT_ID", nil),
+							Description: "Unique identifier of the Lyve Cloud Account API.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_ID", nil),
 						},
 						"access_key": {
 							Type:        schema.TypeString,
 							Required:    true,
-							Description: "The access key is generated when you generate Account API v2 credentails.",
-							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV2_ACCESS_KEY", nil),
+							Description: "The access key is generated when you generate Account API credentails.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_ACCESS_KEY", nil),
 						},
 						"secret": {
 							Type:        schema.TypeString,
 							Required:    true,
-							Description: "The secret key is generated when you generate Account API v2 credentials.",
-							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_AAPIV2_SECRET", nil),
+							Description: "The secret key is generated when you generate Account API credentials.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_SECRET", nil),
 						},
 					},
 				},
@@ -107,9 +85,7 @@ func Provider() *schema.Provider {
 			"lyvecloud_s3_object":                           ResourceObject(),
 			"lyvecloud_s3_object_copy":                      ResourceObjectCopy(),
 			"lyvecloud_permission":                          ResourcePermission(),
-			"lyvecloud_permission_v2":                       ResourcePermissionV2(),
 			"lyvecloud_service_account":                     ResourceServiceAccount(),
-			"lyvecloud_service_account_v2":                  ResourceServiceAccountV2(),
 			"lyvecloud_s3_bucket_object_lock_configuration": ResourceBucketObjectLockConfiguration(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -137,38 +113,24 @@ func createS3Client(region, accessKey, secretKey, endpointUrl string) (*s3.S3, e
 	return client, nil
 }
 
-// createAccAPIV1Client creates Account API v1 client.
-func createAccAPIV1Client(clientId, clientSecret string) (*AuthData, error) {
-	credentials := Auth{
-		ClientID:     clientId,
-		ClientSecret: clientSecret,
-	}
-	accApiClient, err := AuthAccountAPI(&credentials)
-	if err != nil {
-		return nil, fmt.Errorf("error authenticating account APIv1: %w", err)
-	}
-	return accApiClient, nil
-}
-
-// createAccAPIV2Client creates Account API v1 client.
-func createAccAPIV2Client(accountId, accessKey, secret string) (*AuthDataV2, error) {
-	credentials := AuthV2{
+// createAccAPIClient creates Account API v2 client.
+func createAccountAPIClient(accountId, accessKey, secret string) (*AuthData, error) {
+	credentials := AuthRequest{
 		AccountID: accountId,
 		AccessKey: accessKey,
 		Secret:    secret,
 	}
-	accAPIV2Client, err := AuthAccountAPIV2(&credentials)
+	accountAPIClient, err := AuthAccountAPI(&credentials)
 	if err != nil {
-		return nil, fmt.Errorf("error authenticating account APIv2: %w", err)
+		return nil, fmt.Errorf("error authenticating account API: %w", err)
 	}
 
-	return accAPIV2Client, nil
+	return accountAPIClient, nil
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	var s3Client *s3.S3
-	var accountAPIV1Client *AuthData
-	var accountAPIV2Client *AuthDataV2
+	var accountAPIClient *AuthData
 	var err error
 
 	if s3, ok := d.Get("s3").([]interface{}); ok && len(s3) > 0 && s3[0] != nil {
@@ -206,57 +168,34 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		}
 	}
 
-	if accountAPIV1, ok := d.Get("account_v1").([]interface{}); ok && len(accountAPIV1) > 0 && accountAPIV1[0] != nil {
-		accountAPIV1Attr := accountAPIV1[0].(map[string]interface{})
-
-		var clientId, clientSecret string
-
-		if v, ok := accountAPIV1Attr["client_id"].(string); ok && v != "" {
-			clientId = v
-		} else {
-			return nil, diag.FromErr(errors.New("client_id must be set and contain a non-empty value"))
-		}
-
-		if v, ok := accountAPIV1Attr["client_secret"].(string); ok && v != "" {
-			clientSecret = v
-		} else {
-			return nil, diag.FromErr(errors.New("client_secret must be set and contain a non-empty value"))
-		}
-
-		accountAPIV1Client, err = createAccAPIV1Client(clientId, clientSecret)
-		if err != nil {
-			return nil, diag.FromErr(err)
-		}
-	}
-
-	if accountAPIV2, ok := d.Get("account_v2").([]interface{}); ok && len(accountAPIV2) > 0 && accountAPIV2[0] != nil {
-		accountAPIV2Attr := accountAPIV2[0].(map[string]interface{})
+	if accountAPI, ok := d.Get("account").([]interface{}); ok && len(accountAPI) > 0 && accountAPI[0] != nil {
+		accountAPIAttr := accountAPI[0].(map[string]interface{})
 
 		var accountId, accessKey, secret string
 
-		if v, ok := accountAPIV2Attr["account_id"].(string); ok && v != "" {
+		if v, ok := accountAPIAttr["account_id"].(string); ok && v != "" {
 			accountId = v
 		} else {
-			return nil, diag.FromErr(errors.New("accountId must be set and contain a non-empty value"))
+			return nil, diag.FromErr(errors.New("account_id must be set and contain a non-empty value"))
 		}
 
-		if v, ok := accountAPIV2Attr["access_key"].(string); ok && v != "" {
+		if v, ok := accountAPIAttr["access_key"].(string); ok && v != "" {
 			accessKey = v
 		} else {
-			return nil, diag.FromErr(errors.New("accessKey must be set and contain a non-empty value"))
+			return nil, diag.FromErr(errors.New("access_key must be set and contain a non-empty value"))
 		}
 
-		if v, ok := accountAPIV2Attr["secret"].(string); ok && v != "" {
+		if v, ok := accountAPIAttr["secret"].(string); ok && v != "" {
 			secret = v
 		} else {
 			return nil, diag.FromErr(errors.New("secret must be set and contain a non-empty value"))
 		}
 
-		accountAPIV2Client, err = createAccAPIV2Client(accountId, accessKey, secret)
+		accountAPIClient, err = createAccountAPIClient(accountId, accessKey, secret)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
 	}
 
-	return Client{S3Client: s3Client, AccAPIV1Client: accountAPIV1Client, AccAPIV2Client: accountAPIV2Client}, nil
+	return Client{S3Client: s3Client, AccountAPIClient: accountAPIClient}, nil
 }

@@ -1,18 +1,15 @@
 ---
 page_title: "Lyve Cloud: lyvecloud_service_account"
-subcategory: "Account API v1"
+subcategory: "Account API"
 description: |-
   Provides a service account resource.
 ---
 
 # Resource: lyvecloud_service_account
 
-Provides a service account resource. Based on Account API v1.
+Provides a service account resource. Based on Account API.
 
-~> **NOTE:** Updating service accounts is not supported in this resource. For the functionality of updating service accounts, 
-`resource_service_account_v2` must be used.
-
-~> **NOTE:** Credentials for Account API v2 must be provided to use this resource.
+~> **NOTE:** Credentials for Account API must be provided to use this resource.
 
 ## Example Usage
 
@@ -20,7 +17,7 @@ Provides a service account resource. Based on Account API v1.
 
 ```terraform
 resource "lyvecloud_service_account" "serviceaccount" {
-  name = "my-tf-test-service_account"
+  service_account = "my-tf-test-service_account"
   description = "service account description"
   permissions = ["my-tf-test-permission-id"]
 }
@@ -38,4 +35,6 @@ In addition to all arguments above, the following attributes are exported:
 
 * `id` - A Service Account ID that uniquely identifies each Service Account created in Lyve Cloud. Used to identify this Service Account when it is deleted.
 * `access_key` - Access key to use when authenticating S3 API requests.
-* `access_secret` - Access secret key to use when authenticating S3 API requests.
+* `secret` - Access secret key to use when authenticating S3 API requests.
+* `ready_state` - True if the service account is ready across all regions.
+* `enabled` - State of the Service Account. It can be enabled or disabled.

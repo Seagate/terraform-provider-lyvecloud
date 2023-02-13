@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  PLUGIN_VERSION: 1.0.0
+  PLUGIN_VERSION: 0.2.0
   OUTPUT_FILENAME: terraform-provider-lyvecloud
 
 tasks:
@@ -51,11 +51,9 @@ tasks:
       LYVECLOUD_S3_ACCESS_KEY: Access Key to the Lyve Cloud API
       LYVECLOUD_S3_SECRET_KEY: Secret Key to the Lyve Cloud API
       LYVECLOUD_S3_ENDPOINT: Lyve Cloud Endpoint URL
-      LYVECLOUD_AAPIV1_CLIENT_ID: Lyve Cloud Account API Client v1 ID
-      LYVECLOUD_AAPIV1_CLIENT_SECRET: Lyve Cloud Account API v1 Client Secret
-      LYVECLOUD_AAPIV2_ACCOUNT_ID: Lyve Cloud Account API Client v2 Account ID
-      LYVECLOUD_AAPIV2_ACCESS_KEY: Lyve Cloud Account API Client v2 Access Key
-      LYVECLOUD_AAPIV2_SECRET: Lyve Cloud Account API Client v2 Secret
+      LYVECLOUD_ACCOUNT_ID: Lyve Cloud Account API Client Account ID
+      LYVECLOUD_ACCOUNT_ACCESS_KEY: Lyve Cloud Account API Client Access Key
+      LYVECLOUD_ACCOUNT_SECRET: Lyve Cloud Account API Client Secret
 
     cmds:
       - go test -v -cover ./lyvecloud

@@ -2,12 +2,13 @@ terraform {
   required_providers {
     lyvecloud = {
       source = "Seagate/lyvecloud"
-      version = "1.0.0"
+      version = "0.2.0"
     }
   }
 }
 
 provider "lyvecloud" {
+  // client credentials for managaing s3 resources
   s3 {
     region = "..."
     access_key = "..."
@@ -15,12 +16,8 @@ provider "lyvecloud" {
     endpoint_url = "..."
   }
 
-  account_v1 {
-    client_id = "..."
-    client_secret = "..."
-  }
-
-  account_v2 {
+  // client credentials for account api to manage permissions and service accounts
+  account {
     account_id = "..."
     access_key = "..."
     secret = "..."
