@@ -10,21 +10,24 @@ This project is based on the official [AWS provider](https://github.com/hashicor
 
 ## Example Provider Configuration
 
-You can set the credentials of the S3 API to manage buckets and objects, the credentials of the Account API to manage permissions and service accounts, or both.
+To manage buckets and objects, the S3 API credentials must be set within the `s3` block. To manage Permissions and Service Account, credentials for Account API should be set in the `account` block. Both of the mentioned blocks is optional and is only required if there is utilization of a resource that depends on it.
 
--> To receive client_id and client_secret, a support ticket needs to be created requesting credentials for the Account API.
+-> To generate credentials for Account API, see the [following document](https://help.lyvecloud.seagate.com/en/using-account-api.html#generating-account-api-credentials).
 
 ```terraform
 provider "lyvecloud" {
-  //s3 api - optional
-  region = ""
-  access_key = ""
-  secret_key = ""
-  endpoint_url = ""
+  s3 {
+    region = ""
+    access_key = ""
+    secret_key = ""
+    endpoint_url = ""
+  }
 
-  //account api - optional
-  client_id = ""
-  client_secret = ""
+  account {
+    account_id = ""
+    access_key = ""
+    secret = ""
+  }
 }
 ```
 
@@ -38,21 +41,23 @@ authentication, in this order, and explained below:
 
 ### Static API Key
 
-Static credentials can be provided by adding the following variables in-line in the
-Lyve Cloud provider block:
-
+Static credentials can be provided in the
+Lyve Cloud provider block by including the following blocks, which contains variables in-line:
 
 ```hcl
 provider "lyvecloud" {
-  //s3 api
-  region = "..."
-  access_key = "..."
-  secret_key = "..."
-  endpoint_url = "..."
+  s3 {
+    region = "..."
+    access_key = "..."
+    secret_key = "..."
+    endpoint_url = "..."
+  }
 
-  //acount api
-  client_id = "..."
-  client_secret = "..."
+  account {
+    account_id = "..."
+    access_key = "..."
+    secret = "..."
+  }
 }
 ```
 
@@ -61,21 +66,22 @@ provider "lyvecloud" {
 You can provide your configuration via the environment variables representing your Lyve Cloud credentials:
 
 ```
-$ export LYVECLOUD_REGION="<Lyve Cloud region>"
-$ export LYVECLOUD_ACCESS_KEY="<Access Key to the Lyve Cloud API>"
-$ export LYVECLOUD_SECRET_KEY="<Secret Key to the Lyve Cloud API>"
-$ export LYVECLOUD_ENDPOINT="<Lyve Cloud Endpoint URL>"
+$ export LYVECLOUD_S3_REGION="<Lyve Cloud region>"
+$ export LYVECLOUD_S3_ACCESS_KEY="<Access Key to the Lyve Cloud API>"
+$ export LYVECLOUD_S3_SECRET_KEY="<Secret Key to the Lyve Cloud API>"
+$ export LYVECLOUD_S3_ENDPOINT="<Lyve Cloud Endpoint URL>"
 
-$ export LYVECLOUD_CLIENT_ID="<Lyve Cloud Account API Client ID>"
-$ export LYVECLOUD_CLIENT_SECRET="<Lyve Cloud Account API Client Secret>"
+$ export LYVECLOUD_ACCOUNT_ID="<Lyve Cloud Account API Client Account ID>"
+$ export LYVECLOUD_ACCOUNT_ACCESS_KEY="<Lyve Cloud Account API Client Access Key>"
+$ export LYVECLOUD_ACCOUNT_SECRET="<Lyve Cloud Account API Client Secret>"
+
 ```
 
-When using this method, you may omit the
-lyvecloud `provider` block entirely:
+~> When using environment variables, an empty block for each type of API is required to allow provider configurations from environment variables to be specified.
 
-```hcl
-resource "lyvecloud_s3_bucket" "my_bucket" {
-  # .....
+```terraform
+provider "lyvecloud" {
+  s3 {} # When using S3 API credentials environment variables
 }
 ```
 
@@ -83,14 +89,13 @@ resource "lyvecloud_s3_bucket" "my_bucket" {
 
 The following arguments are supported in the `provider` block:
 
-* `access_key` - (Optional) Lyve Cloud access key. Can also be set with the `LYVECLOUD_ACCESS_KEY` environment variable. Must be set to manage S3 resources(buckets and objects). 
+* `s3` - (Optional) Configuration block to use S3 API credentials.
+  * `access_key` - (Required) Lyve Cloud access key. Can also be set with the `LYVECLOUD_S3_ACCESS_KEY` environment variable. Must be set to manage S3 resources(buckets and objects). 
+  * `secret_key` - (Required) Lyve Cloud secret key. Can also be set with the `LYVECLOUD_S3_SECRET_KEY` environment variable. Must be set to manage S3 resources(buckets and objects).
+  * `region` - (Required) Lyve Cloud region where the provider will operate. Can also be set with the `LYVECLOUD_S3_REGION` environment variable. Must be set to manage S3 resources(buckets and objects).
+  * `endpoint_url` - (Required) Lyve Cloud Endpoint URL. Can also be set with the `LYVECLOUD_S3_ENDPOINT` environment variable. Must be set to manage S3 resources(buckets and objects).
 
-* `secret_key` - (Optional) Lyve Cloud secret key. Can also be set with the `LYVECLOUD_SECRET_KEY` environment variable. Must be set to manage S3 resources(buckets and objects).
-
-* `region` - (Optional) Lyve Cloud region where the provider will operate. Can also be set with the `LYVECLOUD_REGION` environment variable. Must be set to manage S3 resources(buckets and objects).
-
-* `endpoint_url` - (Optional) Lyve Cloud Endpoint URL. Can also be set with the `LYVECLOUD_ENDPOINT` environment variable. Must be set to manage S3 resources(buckets and objects).
-
-* `client_id` - (Optional) Lyve Cloud Account API Client ID. Can also be set with the `LYVECLOUD_CLIENT_ID` environment variable. Must be set to manage Account API resources(permissions and service accounts).
-
-* `client_secret` - (Optional) Lyve Cloud Account API Client Secret. Can also be set with the `LYVECLOUD_CLIENT_SECRET` environment variable. Must be set to manage Account API resources(permissions and service accounts).
+* `account` - (Optional) Configuration block to use Account API credentials.
+  * `account_id` - (Required) Lyve Cloud Account API Client Account ID. Can also be set with the `LYVECLOUD_ACCOUNT_ID` environment variable. Must be set to manage Account API resources.
+  * `access_key` - (Required) Lyve Cloud Account API Client Access Key. Can also be set with the `LYVECLOUD_ACCOUNT_ACCESS_KEY` environment variable. Must be set to manage Account API resources.
+  * `secret` - (Required) Lyve Cloud Account API Client Secret. Can also be set with the `LYVECLOUD_ACCOUNT_SECRET` environment variable. Must be set to manage Account API resources(permissions and service accounts).

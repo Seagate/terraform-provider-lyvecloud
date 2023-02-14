@@ -15,10 +15,9 @@ func ResourceServiceAccount() *schema.Resource {
 		Delete: resourceServiceAccountDelete,
 
 		Schema: map[string]*schema.Schema{
-			"service_account": {
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -27,7 +26,6 @@ func ResourceServiceAccount() *schema.Resource {
 			"permissions": {
 				Type:     schema.TypeList,
 				Required: true,
-				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -36,7 +34,7 @@ func ResourceServiceAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"access_secret": {
+			"secret": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -44,18 +42,26 @@ func ResourceServiceAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ready_state": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
+			"enabled": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
 
-func resourceServiceAccountCreate(d *schema.ResourceData, m interface{}) error {
-	if CheckCredentials(Account, m.(Client)) {
-		return fmt.Errorf("credentials for account API(client_id, client_secret) are missing")
+func resourceServiceAccountCreate(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(AccountAPI, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
 	}
 
-	c := m.(Client).AccApiClient
+	conn := *meta.(Client).AccountAPIClient
 
-	service_account := d.Get("service_account").(string)
+	name := d.Get("name").(string)
 	description := d.Get("description").(string)
 	permissionsList := d.Get("permissions").([]interface{})
 
@@ -64,36 +70,89 @@ func resourceServiceAccountCreate(d *schema.ResourceData, m interface{}) error {
 		permissions = append(permissions, v.(string))
 	}
 
-	resp, err := c.CreateServiceAccount(service_account, description, permissions)
+	serviceAccountInput := ServiceAccount{
+		Name:        name,
+		Description: description,
+		Permissions: permissions,
+	}
+
+	resp, err := conn.CreateServiceAccount(&serviceAccountInput)
 	if err != nil {
 		return fmt.Errorf("error creating service account: %w", err)
 	}
 
 	d.SetId(resp.ID)
 
-	d.Set("access_key", resp.Access_key)
-	d.Set("access_secret", resp.Access_Secret)
-	return resourceServiceAccountRead(d, m)
+	d.Set("access_key", resp.Accesskey)
+	d.Set("secret", resp.Secret)
+
+	return resourceServiceAccountRead(d, meta)
 }
 
-func resourceServiceAccountRead(d *schema.ResourceData, m interface{}) error {
-	d.Set("id", d.Id())
-	return nil
-}
-
-func resourceServiceAccountUpdate(d *schema.ResourceData, m interface{}) error {
-	// currently useless
-	return nil
-}
-
-func resourceServiceAccountDelete(d *schema.ResourceData, m interface{}) error {
-	if CheckCredentials(Account, m.(Client)) {
-		return fmt.Errorf("credentials for account api(client_id, client_secret) are missing")
+func resourceServiceAccountRead(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(AccountAPI, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
 	}
 
-	c := m.(Client).AccApiClient
+	conn := *meta.(Client).AccountAPIClient
 
-	_, err := c.DeleteServiceAccount(d.Id())
+	serviceAccountId := d.Id()
+
+	resp, err := conn.GetServiceAccount(serviceAccountId)
+	if err != nil {
+		return fmt.Errorf("error reading service account (%s): %w", serviceAccountId, err)
+	}
+
+	d.Set("id", resp.Id)
+	d.Set("name", resp.Name)
+	d.Set("description", resp.Description)
+	d.Set("ready_state", resp.ReadyState)
+	d.Set("permissions", resp.Permissions)
+	d.Set("enabled", resp.Enabled)
+
+	return nil
+}
+
+func resourceServiceAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(AccountAPI, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
+	}
+
+	conn := *meta.(Client).AccountAPIClient
+
+	serviceAccountId := d.Id()
+
+	name := d.Get("name").(string)
+	description := d.Get("description").(string)
+	permissionsList := d.Get("permissions").([]interface{})
+
+	permissions := []string{}
+	for _, v := range permissionsList {
+		permissions = append(permissions, v.(string))
+	}
+
+	updateServiceAccountInput := ServiceAccount{
+		Name:        name,
+		Description: description,
+		Permissions: permissions,
+	}
+
+	_, err := conn.UpdateServiceAccount(serviceAccountId, &updateServiceAccountInput)
+	if err != nil {
+		return fmt.Errorf("error updating service account: %w", err)
+	}
+
+	return resourceServiceAccountRead(d, meta)
+}
+
+func resourceServiceAccountDelete(d *schema.ResourceData, meta interface{}) error {
+	if CheckCredentials(AccountAPI, meta.(Client)) {
+		return fmt.Errorf("credentials for account api are missing")
+	}
+
+	conn := *meta.(Client).AccountAPIClient
+
+	_, err := conn.DeleteServiceAccount(d.Id())
 	if err != nil {
 		return fmt.Errorf("error deleting service account: %w", err)
 	}

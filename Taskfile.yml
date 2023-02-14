@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  PLUGIN_VERSION: 0.1.2
+  PLUGIN_VERSION: 0.2.0
   OUTPUT_FILENAME: terraform-provider-lyvecloud
 
 tasks:
@@ -47,12 +47,13 @@ tasks:
     desc: Run the package tests.
     env: 
       TF_ACC: 1
-      LYVECLOUD_REGION: region
-      LYVECLOUD_ACCESS_KEY: access_key
-      LYVECLOUD_SECRET_KEY: secret_key
-      LYVECLOUD_ENDPOINT: endpoint_url
-      LYVECLOUD_CLIENT_ID: client_id
-      LYVECLOUD_CLIENT_SECRET: client_secret
+      LYVECLOUD_S3_REGION: Lyve Cloud region
+      LYVECLOUD_S3_ACCESS_KEY: Access Key to the Lyve Cloud API
+      LYVECLOUD_S3_SECRET_KEY: Secret Key to the Lyve Cloud API
+      LYVECLOUD_S3_ENDPOINT: Lyve Cloud Endpoint URL
+      LYVECLOUD_ACCOUNT_ID: Lyve Cloud Account API Client Account ID
+      LYVECLOUD_ACCOUNT_ACCESS_KEY: Lyve Cloud Account API Client Access Key
+      LYVECLOUD_ACCOUNT_SECRET: Lyve Cloud Account API Client Secret
 
     cmds:
       - go test -v -cover ./lyvecloud

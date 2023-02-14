@@ -2,6 +2,7 @@ package lyvecloud
 
 import "github.com/aws/aws-sdk-go/aws"
 
+// CheckCredentials checks that the client being used for the calling resource is nil, which is caused by missing credentials.
 func CheckCredentials(cType string, client Client) bool {
 	if cType == "s3" {
 		if client.S3Client == nil {
@@ -10,7 +11,7 @@ func CheckCredentials(cType string, client Client) bool {
 			return false
 		}
 	} else if cType == "acc" {
-		if client.AccApiClient == nil {
+		if client.AccountAPIClient == nil {
 			return true
 		} else {
 			return false

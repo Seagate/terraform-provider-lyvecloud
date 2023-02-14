@@ -18,7 +18,7 @@ import (
 
 func TestAccLyveCloudS3Bucket_basic(t *testing.T) {
 	bucketName := acctest.RandomWithPrefix("tf-test-bucket")
-	region := os.Getenv("LYVECLOUD_REGION")
+	region := os.Getenv("LYVECLOUD_S3_REGION")
 	resourceName := "lyvecloud_s3_bucket.test"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -372,6 +372,10 @@ func testAccCheckBucketAddObjects(n string, keys ...string) resource.TestCheckFu
 
 func testAccBucketConfig_basic(randInt string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = "%s"
 }
@@ -380,6 +384,10 @@ resource "lyvecloud_s3_bucket" "test" {
 
 func testAccBucketConfig_forceDestroy(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket        = "%s"
   force_destroy = true
@@ -389,6 +397,10 @@ resource "lyvecloud_s3_bucket" "test" {
 
 func testAccBucketConfig_forceDestroyObjectLockEnabledDefaultRetention(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "test" {
   bucket        = "%s"
   force_destroy = true
@@ -411,6 +423,10 @@ resource "lyvecloud_s3_bucket_object_lock_configuration" "test" {
 
 func testAccBucketConfig_multiTags(randInt int) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "bucket1" {
   bucket        = "tf-test-bucket-1-%[1]d"
   force_destroy = true
@@ -475,6 +491,11 @@ resource "lyvecloud_s3_bucket" "bucket6" {
 
 func testAccBucketConfig_tags(bucketName string) string {
 	return fmt.Sprintf(`
+
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "test" {
   bucket        = %[1]q
   force_destroy = false
@@ -490,6 +511,11 @@ resource "lyvecloud_s3_bucket" "test" {
 
 func testAccBucketConfig_updatedTags(bucketName string) string {
 	return fmt.Sprintf(`
+
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "test" {
   bucket        = %[1]q
   force_destroy = false
@@ -506,6 +532,10 @@ resource "lyvecloud_s3_bucket" "test" {
 
 func testAccBucketConfig_noTags(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "test" {
   bucket        = %[1]q
   force_destroy = false
@@ -515,6 +545,10 @@ resource "lyvecloud_s3_bucket" "test" {
 
 func testAccBucketConfig_objectLockEnabledNoDefaultRetention(bucketName string) string {
 	return fmt.Sprintf(`
+provider "lyvecloud" {
+	s3 {}
+}
+	
 resource "lyvecloud_s3_bucket" "test" {
   bucket = %[1]q
 
@@ -524,18 +558,30 @@ resource "lyvecloud_s3_bucket" "test" {
 }
 
 const testAccBucketConfig_emptyString = `
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket = ""
 }
 `
 
 const testAccBucketConfig_generatedName = `
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket_prefix = "tf-test-"
 }
 `
 
 const testAccBucketConfig_namePrefix = `
+provider "lyvecloud" {
+	s3 {}
+}
+
 resource "lyvecloud_s3_bucket" "test" {
   bucket_prefix = "tf-test-"
 }

@@ -15,7 +15,6 @@ import (
 func DataSourceBucket() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceBucketRead,
-
 		Schema: map[string]*schema.Schema{
 			"bucket": {
 				Type:     schema.TypeString,

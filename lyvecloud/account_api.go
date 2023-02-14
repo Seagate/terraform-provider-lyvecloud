@@ -7,190 +7,389 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
+	"strconv"
 )
 
-// ErrorResponse holds the parsed response from in case if account api returns error.
+// ErrorResponse holds the parsed response in case of error.
 type ErrorResponse struct {
-	Error string
+	Code    interface{} `json:"code,omitempty"`
+	Message string      `json:"message"`
 }
 
-// PermissionResponse holds the parsed response from CreatePermission.
-type PermissionResponse struct {
-	ID string
+// AuthRequest specifies parameters for AuthAccountAPI.
+type AuthRequest struct {
+	AccountID string `json:"accountId"`
+	AccessKey string `json:"accessKey"`
+	Secret    string `json:"secret"`
 }
 
-// ServiceAccountResponse holds the parsed response from CreateServiceAccount.
-type ServiceAccountResponse struct {
-	ID            string
-	Access_key    string
-	Access_Secret string
+// AuthData holds the response from the authentication request.
+type AuthData struct {
+	Token         string `json:"token"`
+	ExpirationSec string `json:"expirationSec"`
 }
 
-// Permission specifies parameters for CreatePermission.
+// Permission specifies parameters for CreatePermission and UpdatePermission.
 type Permission struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
-	Actions     string   `json:"actions"`
+	Type        string   `json:"type"`    // should be auto computed in terraform. all-buckets/bucket-prefix/bucket-names/policy
+	Actions     string   `json:"actions"` // all-operations/read-only/write-only
+	Prefix      string   `json:"prefix"`
 	Buckets     []string `json:"buckets"`
+	Policy      string   `json:"policy"`
 }
 
-// ServiceAccount specifies parameters for CreateServiceAccount.
+// ServiceAccount specifies parameters for CreateServiceAccount and UpdateServiceAccount.
 type ServiceAccount struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Permissions []string `json:"permissions"`
 }
 
+// ServiceAccountResponse holds the parsed response from CreateServiceAccount.
+type ServiceAccountResponse struct {
+	ID        string `json:"id"`
+	Accesskey string `json:"accessKey"`
+	Secret    string `json:"secret"`
+}
+
+// PermissionResponse holds the parsed response from CreatePermission.
+type PermissionResponse struct {
+	ID string `json:"id"`
+}
+
+// GetPermissionResponse holds the parsed response from GetPermission.
+type GetPermissionResponse struct {
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Type        string   `json:"type"`
+	ReadyState  bool     `json:"readyState"`
+	Actions     string   `json:"actions"`
+	Prefix      string   `json:"prefix"`
+	Buckets     []string `json:"buckets"`
+	Policy      string   `json:"policy"`
+}
+
+// GetServiceAccountResponse holds the parsed response from GetServiceAccount.
+type GetServiceAccountResponse struct {
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Enabled     bool     `json:"enabled"`
+	ReadyState  bool     `json:"readyState"`
+	Permissions []string `json:"permissions"`
+}
+
+// The Dates structure holds the dates for which usage should be retrieved.
+type Dates struct {
+	fromMonth int
+	fromYear  int
+	toMonth   int
+	toYear    int
+}
+
 // AuthAccountAPI returns access token.
-func AuthAccountAPI(clientId, clientSecret string) (*AuthData, error) {
-	var client *AuthData
-	r := fmt.Sprintf(ClientReq, clientId, clientSecret)
-	resp, err := CreateAndSendRequest(Post, TokenUrl, map[string]string{ContentType: Json}, strings.NewReader(r))
+func AuthAccountAPI(credentials *AuthRequest) (*AuthData, error) {
+	payload, err := json.Marshal(credentials)
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
-	if resp.StatusCode == ErrCodeUnauthorized {
-		return client, errors.New(UnauthorizedMessage)
+	resp, err := CreateAndSendRequest(http.MethodPost, TokenUrl, HeadersAuth(), bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
+	var client *AuthData
 	if err = json.Unmarshal(resBody, &client); err != nil {
-		return client, err
-	}
-
-	if err != nil {
-		return client, err
+		return nil, err
 	}
 
 	return client, nil
 }
 
 // CreatePermission creates permission.
-func (c *AuthData) CreatePermission(name, desc, actions string, buckets []string) (*PermissionResponse, error) {
-	var pid *PermissionResponse
-	data := SetPermission(name, desc, actions, buckets)
-	buf, err := json.Marshal(data)
+func (c *AuthData) CreatePermission(permission *Permission) (*PermissionResponse, error) {
+	payload, err := json.Marshal(permission)
 	if err != nil {
-		return pid, err
+		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(Put, PermissionUrl, map[string]string{Authorization: Bearer + c.Access_token, ContentType: Json}, bytes.NewReader(buf))
+	resp, err := CreateAndSendRequest(http.MethodPost, PermissionUrl, HeadersCreate(c), bytes.NewBuffer(payload))
 	if err != nil {
-		return pid, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return pid, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var permissionId *PermissionResponse
+	if err = json.Unmarshal(resBody, &permissionId); err != nil {
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &pid); err != nil {
-		return pid, err
-	}
+	return permissionId, nil
+}
 
+// GetPermission retrieves given permission.
+func (c *AuthData) GetPermission(permissionId string) (*GetPermissionResponse, error) {
+	resp, err := CreateAndSendRequest(http.MethodGet, PermissionUrl+SlashSeparator+permissionId, HeadersGet(c), nil)
 	if err != nil {
-		return pid, err
+		return nil, err
 	}
 
-	return pid, nil
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var getPermissionResp *GetPermissionResponse
+	if err = json.Unmarshal(resBody, &getPermissionResp); err != nil {
+		return nil, err
+	}
+
+	return getPermissionResp, nil
 }
 
 // DeletePermission deletes permission.
-func (c *AuthData) DeletePermission(permissionId string) (*http.Response, error) {
-	return CreateAndSendRequest(Delete, PermissionUrl+SlashSeparator+permissionId, map[string]string{Authorization: Bearer + c.Access_token}, nil)
+func (c *AuthData) DeletePermission(permissionId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, PermissionUrl+SlashSeparator+permissionId, HeadersDelete(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
+}
+
+// UpdatePermission updates permission.
+func (c *AuthData) UpdatePermission(permissionId string, permission *Permission) (int, error) {
+	payload, err := json.Marshal(permission)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := CreateAndSendRequest(http.MethodPut, PermissionUrl+SlashSeparator+permissionId, HeadersCreate(c), bytes.NewBuffer(payload))
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // CreateServiceAccount creates service account.
-func (c *AuthData) CreateServiceAccount(name, desc string, permissions []string) (*ServiceAccountResponse, error) {
-	var sad *ServiceAccountResponse
-	data := SetSA(name, desc, permissions)
-	buf, err := json.Marshal(data)
+func (c *AuthData) CreateServiceAccount(serviceAccount *ServiceAccount) (*ServiceAccountResponse, error) {
+	payload, err := json.Marshal(serviceAccount)
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
-	resp, err := CreateAndSendRequest(Put, SAUrl, map[string]string{Authorization: Bearer + c.Access_token, ContentType: Json}, bytes.NewReader(buf))
+	resp, err := CreateAndSendRequest(http.MethodPost, SAUrl, HeadersCreate(c), bytes.NewBuffer(payload))
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return sad, err
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var serviceAccountData *ServiceAccountResponse
+	if err := json.Unmarshal(resBody, &serviceAccountData); err != nil {
+		return nil, err
 	}
 
-	if err = json.Unmarshal(resBody, &sad); err != nil {
-		return sad, err
-	}
+	return serviceAccountData, nil
+}
 
+func (c *AuthData) GetServiceAccount(serviceAccountId string) (*GetServiceAccountResponse, error) {
+	resp, err := CreateAndSendRequest(http.MethodGet, SAUrl+SlashSeparator+serviceAccountId, HeadersGet(c), nil)
 	if err != nil {
-		return sad, err
+		return nil, err
 	}
 
-	return sad, nil
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var getServiceAccountResp *GetServiceAccountResponse
+	if err = json.Unmarshal(resBody, &getServiceAccountResp); err != nil {
+		return nil, err
+	}
+
+	return getServiceAccountResp, nil
+}
+
+// UpdateServiceAccount updates given service account.
+func (c *AuthData) UpdateServiceAccount(serviceAccountId string, serviceAccount *ServiceAccount) (int, error) {
+	payload, err := json.Marshal(serviceAccount)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := CreateAndSendRequest(http.MethodPut, SAUrl+SlashSeparator+serviceAccountId, HeadersCreate(c), bytes.NewBuffer(payload))
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
+}
+
+// EnableServiceAccount enables service account.
+func (c *AuthData) EnableServiceAccount(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodPut, SAUrl+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGet(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
+}
+
+// DisableServiceAccoun disables service account.
+func (c *AuthData) DisableServiceAccount(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrl+SlashSeparator+serviceAccountId+SlashSeparator+Enabled, HeadersGet(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
 }
 
 // DeleteServiceAccount deletes service account.
-func (c *AuthData) DeleteServiceAccount(permissionId string) (*http.Response, error) {
-	return CreateAndSendRequest(Delete, SAUrl+SlashSeparator+permissionId, map[string]string{Authorization: Bearer + c.Access_token}, nil)
+func (c *AuthData) DeleteServiceAccount(serviceAccountId string) (int, error) {
+	resp, err := CreateAndSendRequest(http.MethodDelete, SAUrl+SlashSeparator+serviceAccountId, HeadersDelete(c), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.StatusCode, nil
+}
+
+// GetUsageByDate returns the historical storage usage by month
+func (c *AuthData) GetUsageByDate(dates Dates) (string, error) {
+	// parse Dates struct to query string
+	datesQuery := generateQueryString(dates)
+	resp, err := CreateAndSendRequest(http.MethodGet, UsageMonthlyUrl+datesQuery, HeadersGet(c), nil)
+	if err != nil {
+		return "", err
+	}
+
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	jsonResponse := string(resBody)
+
+	return jsonResponse, nil
+}
+
+// GetCurrentUsage returns the current month's storage usage in JSON string
+func (c *AuthData) GetCurrentUsage() (string, error) {
+	// parse Dates struct to string
+	resp, err := CreateAndSendRequest(http.MethodGet, UsageCurrentUrl, HeadersGet(c), nil)
+	if err != nil {
+		return "", err
+	}
+
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	jsonResponse := string(resBody)
+
+	return jsonResponse, nil
 }
 
 // CreateAndSendRequest creates http request and sends it.
-func CreateAndSendRequest(method, url string, m map[string]string, body io.Reader) (*http.Response, error) {
-
+func CreateAndSendRequest(method, url string, headers map[string][]string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, errors.New(ErrBadRequest)
+		return nil, err
 	}
-
-	for key, val := range m {
-		req.Header.Set(key, val)
-	}
+	req.Header = headers
 
 	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
-	if resp.StatusCode != 200 {
-		var errMesg *ErrorResponse
+	if resp.StatusCode != http.StatusOK {
 		resBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
+		resp.Body.Close()
 
-		if err = json.Unmarshal(resBody, &errMesg); err != nil {
+		// parse the JSON response into a Go struct
+		var errResponse *ErrorResponse
+		if err := json.Unmarshal([]byte(resBody), &errResponse); err != nil {
 			return nil, err
 		}
 
-		if err != nil {
-			return nil, err
+		if code, ok := errResponse.Code.(string); ok {
+			return nil, errors.New(code)
+		} else if code, ok := errResponse.Code.(int); ok {
+			return nil, errors.New(strconv.Itoa(code))
 		}
-
-		return nil, errors.New(errMesg.Error)
 	}
-
 	return resp, err
 }
 
-// SetPermission initializes a struct for the http request that creates permission.
-func SetPermission(name, desc, actions string, buckets []string) *Permission {
-	return &Permission{
-		Name:        name,
-		Description: desc,
-		Actions:     actions,
-		Buckets:     buckets,
+// generateQueryString takes a Dates struct and generates a query string based on its fields.
+func generateQueryString(dates Dates) string {
+	return fmt.Sprintf("?fromMonth=%d&fromYear=%d&toMonth=%d&toYear=%d",
+		dates.fromMonth, dates.fromYear, dates.toMonth, dates.toYear)
+}
+
+// HeadersAuth returns headers for authorization.
+func HeadersAuth() map[string][]string {
+	return map[string][]string{
+		ContentType: {Json},
+		Accept:      {Json},
+		UserAgent:   {TerraformProvider},
 	}
 }
 
-// SetSA initializes a struct for the http request that creates service account.
-func SetSA(name, desc string, permissions []string) *ServiceAccount {
-	return &ServiceAccount{
-		Name:        name,
-		Description: desc,
-		Permissions: permissions,
+// HeadersGet returns headers for disabling/enabling service account and retrieving permission/service account.
+func HeadersGet(c *AuthData) map[string][]string {
+	return map[string][]string{
+		Accept:        {Json},
+		Authorization: {Bearer + c.Token},
+		UserAgent:     {TerraformProvider},
+	}
+}
+
+// HeadersDelete returns headers for deleting permission/service account.
+func HeadersDelete(c *AuthData) map[string][]string {
+	return map[string][]string{
+		Accept:        {Json},
+		Authorization: {Bearer + c.Token},
+		UserAgent:     {TerraformProvider},
+	}
+}
+
+// HeadersDelete returns headers for creating permission/service account.
+func HeadersCreate(c *AuthData) map[string][]string {
+	return map[string][]string{
+		Authorization: {Bearer + c.Token},
+		ContentType:   {Json},
+		Accept:        {Json},
+		UserAgent:     {TerraformProvider},
 	}
 }

@@ -3,6 +3,7 @@ package lyvecloud
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -16,41 +17,67 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"access_key": {
-				Type:        schema.TypeString,
+			"s3": {
+				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "The access key for API operations.",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCESS_KEY", nil),
+				MaxItems:    1,
+				Description: "The credentials of the Lyve Cloud S3 API are used to manage buckets and objects.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"access_key": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The access key for S3 API operations.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_S3_ACCESS_KEY", nil),
+						},
+						"secret_key": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The secret key for S3 API operations.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_S3_SECRET_KEY", nil),
+						},
+						"region": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Lyve Cloud region for S3 API operations.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_S3_REGION", nil),
+						},
+						"endpoint_url": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Lyve Cloud endpoint URL for S3 API operations.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_S3_ENDPOINT", nil),
+						},
+					},
+				},
 			},
-			"secret_key": {
-				Type:        schema.TypeString,
+			"account": {
+				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "The secret key for API operations.",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_SECRET_KEY", nil),
-			},
-			"region": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Lyve Cloud region.",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_REGION", nil),
-			},
-			"endpoint_url": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Lyve Cloud endpoint URL",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ENDPOINT", nil),
-			},
-			"client_id": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The client ID for Account API operations.",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_CLIENT_ID", nil),
-			},
-			"client_secret": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The region where Lyve Cloud operations will take place.",
-				DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_CLIENT_SECRET", nil),
+				MaxItems:    1,
+				Description: "The credentials for the Account API are used to manage permissions and service accounts.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"account_id": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Unique identifier of the Lyve Cloud Account API.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_ID", nil),
+						},
+						"access_key": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The access key is generated when you generate Account API credentails.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_ACCESS_KEY", nil),
+						},
+						"secret": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The secret key is generated when you generate Account API credentials.",
+							DefaultFunc: schema.EnvDefaultFunc("LYVECLOUD_ACCOUNT_SECRET", nil),
+						},
+					},
+				},
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -69,79 +96,106 @@ func Provider() *schema.Provider {
 	}
 }
 
-func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	var (
-		client           *s3.S3
-		s3Client         bool
-		accountAPIClient bool
-		accApiClient     *AuthData
-	)
+// createS3Client creates AWS SDK client.
+func createS3Client(region, accessKey, secretKey, endpointUrl string) (*s3.S3, error) {
+	s3Config := &aws.Config{
+		Credentials:      credentials.NewStaticCredentials(accessKey, secretKey, ""),
+		Endpoint:         aws.String(endpointUrl),
+		Region:           aws.String(region),
+		DisableSSL:       aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(true),
+	}
+	sess, err := session.NewSession(s3Config)
+	if err != nil {
+		return nil, err
+	}
+	client := s3.New(sess)
+	return client, nil
+}
 
-	region := d.Get("region").(string)
-	clientId := d.Get("client_id").(string)
-	accessKey := d.Get("access_key").(string)
-	secretKey := d.Get("secret_key").(string)
-	endpointUrl := d.Get("endpoint_url").(string)
-	clientSecret := d.Get("client_secret").(string)
-
-	// Warning or errors can be collected in a slice type
-	var diags diag.Diagnostics
-
-	if (accessKey != "") && (secretKey != "") && (region != "") && (endpointUrl != "") {
-		s3Client = true
-		// Setting configs
-		s3Config := &aws.Config{
-			Credentials:      credentials.NewStaticCredentials(accessKey, secretKey, ""),
-			Endpoint:         aws.String(endpointUrl),
-			Region:           aws.String(region),
-			DisableSSL:       aws.Bool(true),
-			S3ForcePathStyle: aws.Bool(true),
-		}
-
-		// Create S3 service session
-		sess, err := session.NewSession(s3Config)
-
-		// Create S3 service client
-		client = s3.New(sess)
-
-		if err != nil {
-			return nil, diag.FromErr(errors.New("error creating aws sdk client"))
-		}
+// createAccAPIClient creates Account API v2 client.
+func createAccountAPIClient(accountId, accessKey, secret string) (*AuthData, error) {
+	credentials := AuthRequest{
+		AccountID: accountId,
+		AccessKey: accessKey,
+		Secret:    secret,
+	}
+	accountAPIClient, err := AuthAccountAPI(&credentials)
+	if err != nil {
+		return nil, fmt.Errorf("error authenticating account API: %w", err)
 	}
 
-	if (clientId != "") && (clientSecret != "") {
-		accountAPIClient = true
-		// create account api client
-		var err error
-		accApiClient, err = AuthAccountAPI(clientId, clientSecret)
+	return accountAPIClient, nil
+}
+
+func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	var s3Client *s3.S3
+	var accountAPIClient *AuthData
+	var err error
+
+	if s3, ok := d.Get("s3").([]interface{}); ok && len(s3) > 0 && s3[0] != nil {
+		s3Attr := s3[0].(map[string]interface{})
+
+		var region, accessKey, secretKey, endpointUrl string
+
+		if v, ok := s3Attr["region"].(string); ok && v != "" {
+			region = v
+		} else {
+			return nil, diag.FromErr(errors.New("region must be set and contain a non-empty value"))
+		}
+
+		if v, ok := s3Attr["access_key"].(string); ok && v != "" {
+			accessKey = v
+		} else {
+			return nil, diag.FromErr(errors.New("access_key must be set and contain a non-empty value"))
+		}
+
+		if v, ok := s3Attr["secret_key"].(string); ok && v != "" {
+			secretKey = v
+		} else {
+			return nil, diag.FromErr(errors.New("secret_key must be set and contain a non-empty value"))
+		}
+
+		if v, ok := s3Attr["endpoint_url"].(string); ok && v != "" {
+			endpointUrl = v
+		} else {
+			return nil, diag.FromErr(errors.New("endpoint_url must be set and contain a non-empty value"))
+		}
+
+		s3Client, err = createS3Client(region, accessKey, secretKey, endpointUrl)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
 	}
 
-	if s3Client && accountAPIClient {
-		return Client{S3Client: client, AccApiClient: accApiClient}, diags
-	} else if s3Client {
-		return Client{S3Client: client}, diags
-	} else if accountAPIClient {
-		return Client{AccApiClient: accApiClient}, diags
+	if accountAPI, ok := d.Get("account").([]interface{}); ok && len(accountAPI) > 0 && accountAPI[0] != nil {
+		accountAPIAttr := accountAPI[0].(map[string]interface{})
+
+		var accountId, accessKey, secret string
+
+		if v, ok := accountAPIAttr["account_id"].(string); ok && v != "" {
+			accountId = v
+		} else {
+			return nil, diag.FromErr(errors.New("account_id must be set and contain a non-empty value"))
+		}
+
+		if v, ok := accountAPIAttr["access_key"].(string); ok && v != "" {
+			accessKey = v
+		} else {
+			return nil, diag.FromErr(errors.New("access_key must be set and contain a non-empty value"))
+		}
+
+		if v, ok := accountAPIAttr["secret"].(string); ok && v != "" {
+			secret = v
+		} else {
+			return nil, diag.FromErr(errors.New("secret must be set and contain a non-empty value"))
+		}
+
+		accountAPIClient, err = createAccountAPIClient(accountId, accessKey, secret)
+		if err != nil {
+			return nil, diag.FromErr(err)
+		}
 	}
 
-	// Create S3 service session
-	sess, err := session.NewSession(nil)
-
-	// Create S3 service client
-	client = s3.New(sess)
-
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	// create account api client
-	accApiClient, err = AuthAccountAPI("", "")
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	return Client{S3Client: client, AccApiClient: accApiClient}, diags
+	return Client{S3Client: s3Client, AccountAPIClient: accountAPIClient}, nil
 }

@@ -1,22 +1,22 @@
 ---
-page_title: "Lyve Cloud: lyvecloud_service_account"
-subcategory: "Account API"
+page_title: "Lyve Cloud: lyvecloud_service_account_v2"
+subcategory: "Account API v2"
 description: |-
   Provides a service account resource.
 ---
 
 # Resource: lyvecloud_service_account
 
-Provides a service account resource. Based on Account API.
+Provides a service account resource. Based on Account API v2.
 
-~> **NOTE:** Credentials for Account API must be provided to use this resource.
+~> **NOTE:** Credentials for Account API v2 must be provided to use this resource.
 
 ## Example Usage
 
 ### Service Account
 
 ```terraform
-resource "lyvecloud_service_account" "serviceaccount" {
+resource "lyvecloud_service_account_v2" "serviceaccount" {
   service_account = "my-tf-test-service_account"
   description = "service account description"
   permissions = ["my-tf-test-permission-id"]
