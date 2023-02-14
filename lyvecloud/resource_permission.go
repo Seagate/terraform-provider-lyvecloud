@@ -149,7 +149,7 @@ func resourcePermissionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	resp, err := conn.CreatePermission(&createPermissionInput)
 	if err != nil {
-		return fmt.Errorf("policy (%s) is invalid JSON: %w", policyJSON, err)
+		return fmt.Errorf("error creating permission: %w", err)
 	}
 	d.SetId(resp.ID)
 
@@ -178,9 +178,12 @@ func resourcePermissionRead(d *schema.ResourceData, meta interface{}) error {
 				d.Set("actions", resp.Actions)
 			}
 
-			if resp.Type != "all-buckets" && resp.Type != "policy" {
-				d.Set("bucket_prefix", resp.Prefix)
+			if resp.Type == "bucket-names" {
 				d.Set("buckets", resp.Buckets)
+			}
+
+			if resp.Type == "bucket-prefix" {
+				d.Set("bucket_prefix", resp.Prefix)
 			}
 
 			d.Set("ready_state", resp.ReadyState)
@@ -263,7 +266,7 @@ func resourcePermissionUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	_, err := conn.UpdatePermission(permissionId, &updatePermissinInput)
 	if err != nil {
-		return fmt.Errorf("error updating permission: %s", updatePermissinInput)
+		return fmt.Errorf("error updating permission: %w", err)
 	}
 
 	return resourcePermissionRead(d, meta)

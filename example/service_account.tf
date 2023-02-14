@@ -10,5 +10,5 @@ output "access-key" {
 }
 
 output "secret-key" {
-  value = lyvecloud_service_account.test.access_secret
+  value = lyvecloud_service_account.test.secret
 }
