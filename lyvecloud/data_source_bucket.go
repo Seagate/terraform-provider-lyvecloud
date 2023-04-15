@@ -63,6 +63,7 @@ func bucketLocation(client *s3.S3, d *schema.ResourceData, bucket string) error 
 		r.Config.S3ForcePathStyle = client.Config.S3ForcePathStyle
 		r.Config.Credentials = client.Config.Credentials
 	})
+
 	if err != nil {
 		return err
 	}

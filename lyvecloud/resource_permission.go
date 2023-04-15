@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -207,6 +208,12 @@ func resourcePermissionRead(d *schema.ResourceData, meta interface{}) error {
 			return resource.RetryableError(fmt.Errorf("Error reading permission %s", permissionId))
 		}
 
+		if !d.IsNewResource() && err.Error() == PermissionNotFound {
+			log.Printf("[WARN] Permission (%s) not found, removing from state", d.Id())
+			d.SetId("")
+			return nil
+		}
+
 		return resource.NonRetryableError(fmt.Errorf("Error reading permission: %s", err))
 	})
 	return nil
@@ -265,6 +272,13 @@ func resourcePermissionUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	_, err := conn.UpdatePermission(permissionId, &updatePermissinInput)
+
+	if !d.IsNewResource() && err.Error() == PermissionNotFound {
+		log.Printf("[WARN] Permission (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return fmt.Errorf("error updating permission: %w", err)
 	}

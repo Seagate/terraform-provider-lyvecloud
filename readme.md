@@ -22,18 +22,15 @@ You can set the credentials of the S3 API to manage buckets and objects, the cre
 
 ```hcl
 provider "lyvecloud" {
-  s3 {
-    region = ""
-    access_key = ""
-    secret_key = ""
-    endpoint_url = ""
-  }
+  //s3 api - optional
+  region = ""
+  access_key = ""
+  secret_key = ""
+  endpoint_url = ""
 
-  account {
-    account_id = ""
-    access_key = ""
-    secret = ""
-  }
+  //account api - optional
+  client_id = ""
+  client_secret = ""
 }
 ```
 
@@ -50,7 +47,7 @@ resource "lyvecloud_s3_bucket" "bucket" {
 
 ```hcl
 resource "lyvecloud_permission" "permission" {
-  permission = "my-tf-permission"
+  name = "my-tf-permission"
   description = "my-example-permission-description"
   actions = "all-operations" // “all-operations”, “read”, or “write”.
   buckets = ["my-tf-bucket"]
@@ -84,17 +81,14 @@ terraform {
 }
 
 provider "lyvecloud" {
-  s3 {
-    region = ""
-    access_key = ""
-    secret_key = ""
-    endpoint_url = ""
-  }
+  //s3 api - optional
+  region = ""
+  access_key = ""
+  secret_key = ""
+  endpoint_url = ""
 
-  account {
-    account_id = ""
-    access_key = ""
-    secret = ""
-  }
+  //account api - optional
+  client_id = ""
+  client_secret = ""
 }
 ```

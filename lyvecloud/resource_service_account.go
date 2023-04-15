@@ -2,8 +2,10 @@ package lyvecloud
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceServiceAccount() *schema.Resource {
@@ -14,10 +16,14 @@ func ResourceServiceAccount() *schema.Resource {
 		Update: resourceServiceAccountUpdate,
 		Delete: resourceServiceAccountDelete,
 
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringLenBetween(0, 128),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -99,6 +105,13 @@ func resourceServiceAccountRead(d *schema.ResourceData, meta interface{}) error 
 	serviceAccountId := d.Id()
 
 	resp, err := conn.GetServiceAccount(serviceAccountId)
+
+	if !d.IsNewResource() && err.Error() == ServiceAccountNotFound {
+		log.Printf("[WARN] Service Account (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return fmt.Errorf("error reading service account (%s): %w", serviceAccountId, err)
 	}
@@ -138,6 +151,13 @@ func resourceServiceAccountUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	_, err := conn.UpdateServiceAccount(serviceAccountId, &updateServiceAccountInput)
+
+	if !d.IsNewResource() && err.Error() == ServiceAccountNotFound {
+		log.Printf("[WARN] Service Account (%s) not found, removing from state", d.Id())
+		d.SetId("")
+		return nil
+	}
+
 	if err != nil {
 		return fmt.Errorf("error updating service account: %w", err)
 	}

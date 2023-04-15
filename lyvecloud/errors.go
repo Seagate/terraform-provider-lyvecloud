@@ -7,5 +7,7 @@ const (
 	ErrCodeBucketNotEmpty                  = "BucketNotEmpty"
 	ErrCodeObjectLockConfigurationNotFound = "ObjectLockConfigurationNotFoundError"
 	ErrCodeOperationAborted                = "OperationAborted"
+	ServiceAccountNotFound                 = "ServiceAccountNotFound"
+	PermissionNotFound                     = "PermissionNotFound"
 	InternalErr                            = "InternalError"
 )

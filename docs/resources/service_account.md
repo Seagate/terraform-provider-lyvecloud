@@ -1,6 +1,6 @@
 ---
 page_title: "Lyve Cloud: lyvecloud_service_account"
-subcategory: "Account API"
+subcategory: "Account"
 description: |-
   Provides a service account resource.
 ---
@@ -17,7 +17,7 @@ Provides a service account resource. Based on Account API.
 
 ```terraform
 resource "lyvecloud_service_account" "serviceaccount" {
-  service_account = "my-tf-test-service_account"
+  name = "my-tf-test-service_account"
   description = "service account description"
   permissions = ["my-tf-test-permission-id"]
 }
@@ -38,3 +38,11 @@ In addition to all arguments above, the following attributes are exported:
 * `secret` - Access secret key to use when authenticating S3 API requests.
 * `ready_state` - True if the service account is ready across all regions.
 * `enabled` - State of the Service Account. It can be enabled or disabled.
+
+## Import
+
+Service Account can be imported using the `service account`, e.g.,
+
+```
+$ terraform import lyvecloud_servcie_account.servcie-account servcie-account-id
+```

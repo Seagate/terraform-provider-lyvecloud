@@ -1,6 +1,6 @@
 ---
 page_title: "Lyve Cloud: lyvecloud_permission"
-subcategory: "Account API"
+subcategory: "Account"
 description: |-
   Provides a permission resource.
 ---
@@ -109,3 +109,11 @@ In addition to all arguments above, the following attributes are exported:
 * `id` - A Permission ID that uniquely identifies each permission created in Lyve Cloud. Can be used to identify this permission when creating a service account.
 * `type` - The permission type: all-buckets/bucket-prefix/bucket-names/policy.
 * `ready_state` - True if the permission is ready across all regions.
+
+## Import
+
+Permission can be imported using the `permission`, e.g.,
+
+```
+$ terraform import lyvecloud_permission.permission permission-id
+```
